@@ -21,20 +21,20 @@ int main(int argc, char** argv)
     TimerAvrg fps_;
     std::string dictionaryStr_0 = "ALL_DICTS";
     std::string dictionaryStr_1 = "ALL_DICTS";
-    float markerSize_0 = 0.139;
-    float markerSize_1 = 0.139;
+    float markerSize_0 = 0.2f;
+    float markerSize_1 = 0.2f;
     aruco::CameraParameters camparams_0;
     aruco::CameraParameters camparams_1;
     aruco::MarkerDetector detector_0;
     aruco::MarkerDetector detector_1;
-    camparams_0.readFromXMLFile("camera_nano.yml");
-    camparams_1.readFromXMLFile("camera_nano.yml");
+    camparams_0.readFromXMLFile("cam_0.yml");
+    camparams_1.readFromXMLFile("cam_1.yml");
     detector_0.setDictionary(dictionaryStr_0, 0.0f);
     detector_1.setDictionary(dictionaryStr_1, 0.0f);
     cv::Mat image_0;
     cv::Mat image_1;
-    image_0 = cv::imread("1.png", 1);
-    image_1 = cv::imread("1.png", 1);
+    image_0 = cv::imread("image_0.jpg", 1);
+    image_1 = cv::imread("image_1.png", 1);
     std::vector<aruco::Marker> markers_0;
     std::vector<aruco::Marker> markers_1;
 
@@ -77,7 +77,7 @@ int main(int argc, char** argv)
 
     // draw a 3d cube in each marker if there is 3d info
     if (camparams_1.isValid() && markerSize_1 > 0) {
-        for (unsigned int i = 0; i < markers_0.size(); i++) {
+        for (unsigned int i = 0; i < markers_1.size(); i++) {
             aruco::CvDrawingUtils::draw3dCube(image_1, markers_1[i], camparams_1);
             aruco::CvDrawingUtils::draw3dAxis(image_1, markers_1[i], camparams_1);
         }
