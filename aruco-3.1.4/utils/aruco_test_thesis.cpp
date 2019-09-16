@@ -93,9 +93,7 @@ int main(int argc, char** argv)
     cv::Mat T_cam0_id17 = markers_0[1].getTransformMatrix();
     cv::Mat T_cam1_id17 = markers_1[0].getTransformMatrix();
 
-    /* 1710.77 mm , marker wrt. camera */
-    //cv::Mat T = T_cam1_id17 * T_cam0_id11 * T_cam0_id17.inv();
-    //cv::Mat T = T_cam1_id17.inv() * T_cam0_id11.inv() * T_cam0_id17;
+    /* GT: dist btw cam and marker: 1710.77 mm , detection: marker wrt. camera */
     cv::Mat T = T_cam0_id11.inv() * T_cam0_id17 * T_cam1_id17.inv();
 
     float dist = sqrt(T.at<float>(0, 3) * T.at<float>(0, 3) +
