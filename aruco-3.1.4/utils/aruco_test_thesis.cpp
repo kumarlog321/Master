@@ -1,12 +1,14 @@
  #include "aruco.h"
 #include "cvdrawingutils.h"
+
 #include <fstream>
 #include <iostream>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <sstream>
 #include <string>
 #include <stdexcept>
+
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 struct   TimerAvrg { std::vector<double> times;
 size_t curr = 0, n; std::chrono::high_resolution_clock::time_point begin, end;   TimerAvrg(int _n = 30) 
@@ -33,7 +35,7 @@ int main(int argc, char** argv)
     detector_1.setDictionary(dictionaryStr_1, 0.0f);
     cv::Mat image_0;
     cv::Mat image_1;
-    image_0 = cv::imread("image_0.jpg", 1);
+    image_0 = cv::imread("image_0.png", 1);
     image_1 = cv::imread("image_1.png", 1);
     std::vector<aruco::Marker> markers_0;
     std::vector<aruco::Marker> markers_1;
@@ -43,9 +45,10 @@ int main(int argc, char** argv)
     markers_1 = detector_1.detect(image_1, camparams_1, markerSize_1);
     fps_.stop();
 
-    // chekc the speed by calculating the mean speed of all iterations
-    std::cout << "\rTime detection=" << fps_.getAvrg() * 1000 << " milliseconds nmarkers=" << markers_0.size() << " images resolution=" << image_0.size() << std::endl;
-    std::cout << "\rTime detection=" << fps_.getAvrg() * 1000 << " milliseconds nmarkers=" << markers_1.size() << " images resolution=" << image_1.size() << std::endl;
+    /* check the speed by calculating the mean speed of all iterations */
+    std::cout << "\rTime detection=" << fps_.getAvrg() * 1000 << " milliseconds " << std::endl;
+    std::cout << "\r nmarkers = " << markers_0.size() << " images resolution = " << image_0.size() << std::endl;
+    std::cout << "\r nmarkers = " << markers_1.size() << " images resolution = " << image_1.size() << std::endl;
 
     /* The first camera */
     auto candidates_0 = detector_0.getCandidates();
@@ -57,7 +60,7 @@ int main(int argc, char** argv)
         markers_0[i].draw(image_0, cv::Scalar(0, 0, 255), 2, true);
     }
 
-    // draw a 3d cube in each marker if there is 3d info
+    /* draw a 3d cube in each marker if there is 3d info */
     if (camparams_0.isValid() && markerSize_0 > 0) {
         for (unsigned int i = 0; i < markers_0.size(); i++) {
             aruco::CvDrawingUtils::draw3dCube(image_0, markers_0[i], camparams_0);
@@ -75,13 +78,29 @@ int main(int argc, char** argv)
         markers_1[i].draw(image_1, cv::Scalar(0, 0, 255), 2, true);
     }
 
-    // draw a 3d cube in each marker if there is 3d info
+    
+
+    /* draw a 3d cube in each marker if there is 3d info */
     if (camparams_1.isValid() && markerSize_1 > 0) {
         for (unsigned int i = 0; i < markers_1.size(); i++) {
             aruco::CvDrawingUtils::draw3dCube(image_1, markers_1[i], camparams_1);
             aruco::CvDrawingUtils::draw3dAxis(image_1, markers_1[i], camparams_1);
         }
     }
+
+    /* TODO: check if detected */
+    cv::Mat T_cam0_id11 = markers_0[0].getTransformMatrix();
+    cv::Mat T_cam0_id17 = markers_0[1].getTransformMatrix();
+    cv::Mat T_cam1_id17 = markers_1[0].getTransformMatrix();
+
+    /* 1710.77 mm , marker wrt. camera */
+    //cv::Mat T = T_cam1_id17 * T_cam0_id11 * T_cam0_id17.inv();
+    //cv::Mat T = T_cam1_id17.inv() * T_cam0_id11.inv() * T_cam0_id17;
+    cv::Mat T = T_cam0_id11.inv() * T_cam0_id17 * T_cam1_id17.inv();
+
+    float dist = sqrt(T.at<float>(0, 3) * T.at<float>(0, 3) +
+        T.at<float>(1, 3) * T.at<float>(1, 3) + 
+        T.at<float>(2, 3) * T.at<float>(2, 3));
 
     return 0;
 }
