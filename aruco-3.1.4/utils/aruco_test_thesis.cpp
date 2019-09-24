@@ -11,8 +11,51 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
-#include "aruco_test_thesis.h"
+//#include "aruco_test_thesis.h"
 #include <assert.h>
+
+cv::Mat Rx(float angle)
+{
+    /* Calculate rotation about x axis */
+    cv::Mat R_x = (cv::Mat_<float>(3, 3) <<
+        1, 0, 0,
+        0, cos(angle), -sin(angle),
+        0, sin(angle), cos(angle)
+        );
+    return R_x;
+}
+
+cv::Mat Ry(float angle)
+{
+    /* Calculate rotation about y axis */
+    cv::Mat R_y = (cv::Mat_<float>(3, 3) <<
+        cos(angle), 0, sin(angle),
+        0, 1, 0,
+        -sin(angle), 0, cos(angle)
+        );
+    return R_y;
+}
+
+cv::Mat Rz(float angle)
+{
+    /* Calculate rotation about z axis */
+    cv::Mat R_z = (cv::Mat_<float>(3, 3) <<
+        cos(angle), -sin(angle), 0,
+        sin(angle), cos(angle), 0,
+        0, 0, 1);
+    return R_z;
+}
+
+
+float deg2rad(float theta)
+{
+    return (theta * 0.01745329251994329576923690768489);
+}
+
+cv::Mat setR(float angle_x, float angle_y, float angle_z)
+{
+    return Rx(deg2rad(angle_x)) * Ry(deg2rad(angle_y)) * Rz(deg2rad(angle_z));
+}
 
 struct   TimerAvrg {
     std::vector<double> times;
@@ -35,6 +78,10 @@ cv::Mat rot2euler(cv::Mat dest);
 cv::Mat convert4x4to3x3(cv::Mat T);
 cv::Vec3f rotationMatrixToEulerAngles(cv::Mat cam0_id113x3);
 //void rotationMatrixToEulerAngles(cv::Mat dest);
+
+
+
+
 
 int main(int argc, char** argv)
 {
@@ -111,11 +158,11 @@ int main(int argc, char** argv)
 
     //conver cam0_id11 to 3*3
     cv::Mat cam0_id113x3 = convert4x4to3x3(T_cam0_id11);
-    cv::Vec3f xyz = rotationMatrixToEulerAngles(cam0_id113x3.t());
-    std::cout << xyz;
+    //cv::Vec3f xyz = rotationMatrixToEulerAngles(cam0_id113x3.t());
+    //std::cout << xyz;
     cv::Mat T_cam0_id17 = markers_0[1].getTransformMatrix();
-    cv::Vec3f xyz17 = rotationMatrixToEulerAngles(T_cam0_id17);
-    std::cout << xyz17;
+    //cv::Vec3f xyz17 = rotationMatrixToEulerAngles(T_cam0_id17);
+    //std::cout << xyz17;
     cv::Mat T_cam1_id17 = markers_1[0].getTransformMatrix();
 
     /* GT: dist btw cam and marker: 1710.77 mm , detection: marker wrt. camera */
@@ -125,19 +172,34 @@ int main(int argc, char** argv)
     TmarkerOnTheCar.at<float>(0, 3) = 0.168206;
     TmarkerOnTheCar.at<float>(1, 3) = 1.42624;
     TmarkerOnTheCar.at<float>(2, 3) = 1.38777;
-    cv::Mat T = TmarkerOnTheCar * T_cam0_id11.inv() * T_cam0_id17 * T_cam1_id17.inv();
-    //camera on car location ground truth [m]
-    float gx = -0.30904;
-    float gy = 3.0766;
-    float gz = 1.8331;
-    float ex = std::abs(T.at<float>(0, 3) - gx);
-    float ey = std::abs(T.at<float>(1, 3) - gy);
-    float ez = std::abs(T.at<float>(2, 3) - gz);
+    RmarkerOnTheCar = setR(0, 90, 0);
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            TmarkerOnTheCar.at<float>(i, j) = RmarkerOnTheCar.at<float>(i, j);
+        }
+    }
+
+    /* This is just an intermediate step */
+    cv::Mat T = T_cam0_id11.inv() * T_cam0_id17 * T_cam1_id17.inv();
 
     float dist = sqrt(T.at<float>(0, 3) * T.
         at<float>(0, 3) +
         T.at<float>(1, 3) * T.at<float>(1, 3) +
         T.at<float>(2, 3) * T.at<float>(2, 3));
+
+    float edist = std::abs(dist - 1.77476);
+
+    /* This is the concept */
+    cv::Mat Tmarker2vcs = TmarkerOnTheCar * T_cam0_id11.inv() * T_cam0_id17 * T_cam1_id17.inv();
+
+    //camera on car location ground truth [m]
+    float gx = -0.30904;
+    float gy = 3.0766;
+    float gz = 1.8331;
+    float ex = std::abs(Tmarker2vcs.at<float>(0, 3) - gx);
+    float ey = std::abs(Tmarker2vcs.at<float>(1, 3) - gy);
+    float ez = std::abs(Tmarker2vcs.at<float>(2, 3) - gz);
+    float e = sqrt(ex * ex + ey * ey + ez * ez);
 
     /*
     std::cout << "dest" << dest;
@@ -203,6 +265,8 @@ cv::Vec3f rotationMatrixToEulerAngles(cv::Mat R)
 
 
 }
+
+
 /*
  cv::Mat rot2euler(cv::Mat dest)
 {
