@@ -94,14 +94,14 @@ int main(int argc, char** argv)
     aruco::CameraParameters camparams_1;
     aruco::MarkerDetector detector_0;
     aruco::MarkerDetector detector_1;
-    camparams_0.readFromXMLFile("cam_0.yml");
-    camparams_1.readFromXMLFile("cam_1.yml");
+    camparams_0.readFromXMLFile("cam_00.yml");
+    camparams_1.readFromXMLFile("cam_11.yml");
     detector_0.setDictionary(dictionaryStr_0, 0.0f);
     detector_1.setDictionary(dictionaryStr_1, 0.0f);
     cv::Mat image_0;
     cv::Mat image_1;
-    image_0 = cv::imread("image_0.png", 1);
-    image_1 = cv::imread("image_1.png", 1);
+    image_0 = cv::imread("image00_00.png", 1);
+    image_1 = cv::imread("image11_11.png", 1);
     std::vector<aruco::Marker> markers_0;
     std::vector<aruco::Marker> markers_1;
 
@@ -169,10 +169,10 @@ int main(int argc, char** argv)
     cv::Mat RmarkerOnTheCar = cv::Mat::eye(3, 3, CV_32FC1);
     cv::Mat TmarkerOnTheCar = cv::Mat::eye(4, 4, CV_32FC1);
     // TODO: put 0,90,0 from blender to obtain R, later T with the
-    TmarkerOnTheCar.at<float>(0, 3) = 0.168206;
-    TmarkerOnTheCar.at<float>(1, 3) = 1.42624;
-    TmarkerOnTheCar.at<float>(2, 3) = 1.38777;
-    RmarkerOnTheCar = setR(0, 90, 0);
+    TmarkerOnTheCar.at<float>(0, 3) = 0.0;
+    TmarkerOnTheCar.at<float>(1, 3) = 0.0;
+    TmarkerOnTheCar.at<float>(2, 3) = 0.0;
+    RmarkerOnTheCar = setR(0, 0, 0);
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
             TmarkerOnTheCar.at<float>(i, j) = RmarkerOnTheCar.at<float>(i, j);
@@ -187,19 +187,51 @@ int main(int argc, char** argv)
         T.at<float>(1, 3) * T.at<float>(1, 3) +
         T.at<float>(2, 3) * T.at<float>(2, 3));
 
-    float edist = std::abs(dist - 1.77476);
+    float edist = std::abs(dist - 1.2637);
 
     /* This is the concept */
-    cv::Mat Tmarker2vcs = TmarkerOnTheCar * T_cam0_id11.inv() * T_cam0_id17 * T_cam1_id17.inv();
+    cv::Mat Tcamera2vcs = TmarkerOnTheCar * T_cam0_id11.inv() * T_cam0_id17 * T_cam1_id17.inv();
 
+    /* g states ground truth */
     //camera on car location ground truth [m]
-    float gx = -0.30904;
-    float gy = 3.0766;
-    float gz = 1.8331;
-    float ex = std::abs(Tmarker2vcs.at<float>(0, 3) - gx);
-    float ey = std::abs(Tmarker2vcs.at<float>(1, 3) - gy);
-    float ez = std::abs(Tmarker2vcs.at<float>(2, 3) - gz);
+    //float gx = -0.30904;
+    //float gy = 3.0766;
+    //float gz = 1.8331;
+    float gx = -0.432727; /* cam1 */
+    float gy = 1.09911;
+    float gz = -0.449301;
+    float ex = std::abs(Tcamera2vcs.at<float>(0, 3) - gx);
+    float ey = std::abs(Tcamera2vcs.at<float>(1, 3) - gy);
+    float ez = std::abs(Tcamera2vcs.at<float>(2, 3) - gz);
     float e = sqrt(ex * ex + ey * ey + ez * ez);
+
+    float g_roll = -9.96f;
+    float g_pitch = 91.2f;
+    float g_yaw = 87.2f;
+    cv::Mat gRtemp = setR(g_roll, g_pitch, g_yaw) * setR(180, 0, 0);
+    cv::Mat gRt = gRtemp.t();
+
+
+
+    float gx_id11 = -0.22672;
+    float gy_id11 = -1.1264;
+    float gz_id11 = -0.15329;
+    float gx_cam0 = -0.081863;
+    float gy_cam0 = -0.56468;
+    float gz_cam0 = 3.1863;
+    float gx_cam0_id11 = gx_cam0 - gx_id11;
+    float gy_cam0_id11 = gy_cam0 - gy_id11;
+    float gz_cam0_id11 = gz_cam0 - gz_id11;
+    cv::Mat Ttemp = T_cam0_id11.inv();
+    float ex_cam0_id11 = std::abs(gx_cam0_id11 - T_cam0_id11.at<float>(0,3));
+    float ey_cam0_id11 = std::abs(gy_cam0_id11 - T_cam0_id11.at<float>(1,3));
+    float ez_cam0_id11 = std::abs(gz_cam0_id11 - T_cam0_id11.at<float>(2,3));
+    float ex_cam0_id11a = std::abs(gx_cam0_id11 - Ttemp.at<float>(0, 3));
+    float ey_cam0_id11a = std::abs(gy_cam0_id11 - Ttemp.at<float>(1, 3));
+    float ez_cam0_id11a = std::abs(gz_cam0_id11 - Ttemp.at<float>(2, 3));
+
+
+
 
     /*
     std::cout << "dest" << dest;
@@ -213,6 +245,8 @@ int main(int argc, char** argv)
     std::cout << Degree_euler;
     cv::Mat Eulerangles_id11 = cv::Mat(3, 3, CV_32FC1);
 
+
+    
 
      dest = convert4x4to3x3(T);
     Eulerangles_id11 = rot2euler(dest);
