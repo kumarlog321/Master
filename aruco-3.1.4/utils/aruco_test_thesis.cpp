@@ -310,3 +310,26 @@ float e_dist_T(cv::Mat T4x4, cv::Mat gtT4x4)
     float e = sqrt(ex * ex + ey * ey + ez * ez);
     return e;
 }
+
+/*
+External camera
+w = 0.713375
+x = 0.000012
+y = -0.0
+z = 0.700783
+
+
+Camera on car
+w = 0.461698
+x = -0.535092
+y = 0.473444
+z = 0.525702
+
+marker id11 on car
+w = 1.0
+x = 0.0
+y = 0.0
+z = 0.0
+
+
+*/
