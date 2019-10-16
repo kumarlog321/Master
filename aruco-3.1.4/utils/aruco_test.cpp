@@ -36,6 +36,11 @@ or implied, of Rafael Muñoz Salinas.
 #include <string>
 #include <stdexcept>
 
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/calib3d.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/calib3d/calib3d.hpp>
 #if  CV_MAJOR_VERSION >= 4
 #define CV_CAP_PROP_FRAME_COUNT cv::CAP_PROP_FRAME_COUNT
 #define CV_CAP_PROP_POS_FRAMES cv::CAP_PROP_POS_FRAMES
@@ -316,6 +321,57 @@ int main(int argc, char** argv)
                 cout << TheMarkers[i] << endl;
                 TheMarkers[i].draw(TheInputImageCopy, Scalar(0, 0, 255),2,true);
             }
+			
+			if (TheMarkers.size() == 2) {
+				cv::Mat difvec = TheMarkers[0].Tvec - TheMarkers[1].Tvec;
+				cout << "distance between makers = " << sqrt(difvec.dot(difvec)) << "meters" << endl;
+				//cout << "one" << TheMarkers[0].Tvec;
+				cv::Mat TheMarkes1 = TheMarkers[0].Tvec;
+				cv::Mat TheMarkes2 = TheMarkers[1].Tvec;
+				cv::Mat RMarker1 = TheMarkers[0].Rvec;
+				cv::Mat RMarker2 = TheMarkers[1].Rvec;
+
+				//cout << TheMarkes.size;
+				cout << "marker1 distance to camera = " << sqrt(TheMarkes1.row(0).dot(TheMarkes1.row(0)) + TheMarkes1.row(1).dot(TheMarkes1.row(1)) + TheMarkes1.row(2).dot(TheMarkes1.row(2))) << " meters" << endl;
+
+				cout << "marker2 distance to camera = " << sqrt(TheMarkes2.row(0).dot(TheMarkes2.row(0)) + TheMarkes2.row(1).dot(TheMarkes2.row(1)) + TheMarkes2.row(2).dot(TheMarkes2.row(2))) << " meters" << endl;
+				cout << endl;
+				cv::Mat rotationVector_id12 = cv::Mat(3, 1, CV_32FC1);
+				cv::Mat rotationMatrix_id12 = cv::Mat(3, 3, CV_32FC1);
+				cv::Mat rotationVector_id32 = cv::Mat(3, 1, CV_32FC1);
+				cv::Mat rotationMatrix_id32 = cv::Mat(3, 3, CV_32FC1);
+
+				rotationVector_id12 = TheMarkers[0].Rvec;// RMarker1.row(0);
+				//cout << "Rvec1" << rotationVector_id12;
+
+				//rotationVector_id12.at<float>(0, 0) = 2.8414;
+				//rotationVector_id12.at<float>(1, 0) = 0.0131577;
+				//rotationVector_id12.at<float>(2, 0) = -0.0329009;
+
+				rotationVector_id32 = TheMarkers[1].Rvec;
+
+				//rotationVector_id32.at<float>(0, 0) = 2.84897;
+				//rotationVector_id32.at<float>(1, 0) = 0.00256971;
+				//rotationVector_id32.at<float>(2, 0) = 0.00137644;
+				cv::Rodrigues(rotationVector_id12, rotationMatrix_id12);
+				cv::Rodrigues(rotationVector_id32, rotationMatrix_id32);
+
+				cv::Mat rotationMatrix_id12_transposed = rotationMatrix_id12.t();
+				cv::Mat matrixI = rotationMatrix_id12_transposed * rotationMatrix_id32;
+
+				float errorinR = std::abs(1.0f - matrixI.at<float>(0, 0)) +
+					std::abs(1.0f - matrixI.at<float>(1, 1)) +
+					std::abs(1.0f - matrixI.at<float>(2, 2));
+
+				std::cout << "Rodrigues rotation matrix1" << endl << rotationMatrix_id12 << std::endl;
+				cout << endl;
+				std::cout << "Rodrigues rotation matrix2" << endl << rotationMatrix_id32 << std::endl;
+				cout << endl;
+				std::cout << matrixI << std::endl;
+				cout << endl;
+				std::cout << "errorinR: " << errorinR << std::endl;
+				//(TheMarkes.row(0)*TheMarkes.row(0) + TheMarkes.row(1)*TheMarkes.row(1) + TheMarkes.row(2)*TheMarkes.row(2));
+			}
 
             // draw a 3d cube in each marker if there is 3d info
             if (TheCameraParameters.isValid() && TheMarkerSize > 0)
