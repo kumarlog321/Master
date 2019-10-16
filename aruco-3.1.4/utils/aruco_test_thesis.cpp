@@ -81,8 +81,6 @@ cv::Vec3f rotationMatrixToEulerAngles(cv::Mat cam0_id113x3);
 
 
 
-
-
 int main(int argc, char** argv)
 {
     TimerAvrg fps_;
@@ -94,8 +92,8 @@ int main(int argc, char** argv)
     aruco::CameraParameters camparams_1;
     aruco::MarkerDetector detector_0;
     aruco::MarkerDetector detector_1;
-    camparams_0.readFromXMLFile("cam_00.yml");
-    camparams_1.readFromXMLFile("cam_11.yml");
+    camparams_0.readFromXMLFile("cam_0.yml");
+    camparams_1.readFromXMLFile("cam_1.yml");
     detector_0.setDictionary(dictionaryStr_0, 0.0f);
     detector_1.setDictionary(dictionaryStr_1, 0.0f);
     cv::Mat image_0;
@@ -212,13 +210,42 @@ int main(int argc, char** argv)
     cv::Mat gRt = gRtemp.t();
 
 
+	/* Id11 */
+    float gx_id11 = -0.22672f;
+    float gy_id11 = -1.1264f;
+    float gz_id11 = -0.15329f;
+	float g_roll_id11 = 135.0f;
+	float g_pitch_id11 = 0.0f;
+	float g_yaw_id11 = 0.0f;
+	cv::Mat marker_id11 = cv::Mat::eye(4, 4, CV_32FC1);
+	cv::Mat markerR_id11 = cv::Mat::eye(3, 3, CV_32FC1);
+	marker_id11.at<float>(0, 3) = gx_id11;
+	marker_id11.at<float>(1, 3) = gy_id11;
+	marker_id11.at<float>(2, 3) = gz_id11;
+	markerR_id11 = setR(g_roll_id11, g_pitch_id11, g_yaw_id11);
+	for (int i = 0; i < 3; ++i) {
+		for (int j = 0; j < 3; ++j) {
+			marker_id11.at<float>(i, j) = markerR_id11.at<float>(i, j);
+		}
+	}
 
-    float gx_id11 = -0.22672;
-    float gy_id11 = -1.1264;
-    float gz_id11 = -0.15329;
-    float gx_cam0 = -0.081863;
+
+	/* Id17 */
+	float gx_id17 = 0;
+	float gy_id17 = 0;
+	float gz_id17 = 0;
+	float g_roll_id17 = 0.0f;
+	float g_pitch_id17 = 0.0f;
+	float g_yaw_id17 = 0.0f;
+
+	/* cam0 External */
+	float gx_cam0 = -0.081863;
     float gy_cam0 = -0.56468;
     float gz_cam0 = 3.1863;
+	float g_roll_cam0 = 180.0f;
+	float g_pitch_cam0 = 180.0f;
+	float g_yaw_cam0 = 269.0f;
+
     float gx_cam0_id11 = gx_cam0 - gx_id11;
     float gy_cam0_id11 = gy_cam0 - gy_id11;
     float gz_cam0_id11 = gz_cam0 - gz_id11;
@@ -233,24 +260,6 @@ int main(int argc, char** argv)
 
 
 
-    /*
-    std::cout << "dest" << dest;
-    cv::Mat Eulerangles_id17_cam_0 = cv::Mat(3, 3, CV_32FC1);
-    cv::Mat dest = convert4x4to3x3(T_cam0_id17);
-    Eulerangles_id17_cam_0 = rot2euler(dest);
-    rotationMatrixToEulerAngles(dest);
-
-    std::cout << Eulerangles_id17_cam_0;
-    cv::Mat Degree_euler = Eulerangles_id17_cam_0 * 180 / CV_PI;
-    std::cout << Degree_euler;
-    cv::Mat Eulerangles_id11 = cv::Mat(3, 3, CV_32FC1);
-
-
-    
-
-     dest = convert4x4to3x3(T);
-    Eulerangles_id11 = rot2euler(dest);
-    std::cout << Eulerangles_id11; */
     return 0;
 
 }
@@ -299,67 +308,3 @@ cv::Vec3f rotationMatrixToEulerAngles(cv::Mat R)
 
 
 }
-
-
-/*
- cv::Mat rot2euler(cv::Mat dest)
-{
-     //std::cout << dest ;
-
-    cv::Mat euler(3, 1, CV_32FC1);
-    double m00 = dest.at<float>(0, 0);
-    double m02 = dest.at<float>(0, 2);
-    double m10 = dest.at<float>(1, 0);
-    double m11 = dest.at<float>(1, 1);
-    double m12 = dest.at<float>(1, 2);
-    double m20 = dest.at<float>(2, 0);
-    double m22 = dest.at<float>(2, 2);
-    double x, y, z;
-
-    // Assuming the angles are in radians.
-    if (m10 > 0.998) { // singularity at north pole
-        x = 0;
-        y = CV_PI / 2;
-        z = atan2(m02, m22);
-    }
-    else
-    {
-        x = atan2(-m12, m11);
-        y = asin(m10);
-        z = atan2(-m20, m00);
-    }
-
-    euler.at<float>(0) = x;
-    euler.at<float>(1) = y;
-    euler.at<float>(2) = z;
-
-    return euler;
-}
-
- void rotationMatrixToEulerAngles(cv::Mat R)
- {
-     std::cout << R;
-     float sy = sqrt(R.at<float>(0, 0) * R.at<float>(0, 0) + R.at<float>(1, 0) * R.at<float>(1, 0));
-
-     bool singular = sy < 1e-6; // If
-
-     float x, y, z;
-     if (!singular)
-     {
-         x = atan2(R.at<float>(2, 1), R.at<float>(2, 2));
-         y = atan2(-R.at<float>(2, 0), sy);
-         z = atan2(R.at<float>(1, 0), R.at<float>(0, 0));
-     }
-     else
-     {
-         x = atan2(-R.at<float>(1, 2), R.at<float>(1, 1));
-         y = atan2(-R.at<float>(2, 0), sy);
-         z = 0;
-     }
-     std::cout << "x" << x << "y" << y << "z" << z;
-
-
-
-
- }
- */
