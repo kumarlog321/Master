@@ -155,19 +155,10 @@ int main(int argc, char** argv)
     }
 
     /* TODO: check if detected */
-    cv::Mat T_cam0_id11 = markers_0[0].getTransformMatrix();
-    cv::Mat T_cam0_id17 = markers_0[1].getTransformMatrix();
-    cv::Mat T_cam1_id17 = markers_1[0].getTransformMatrix();
+    cv::Mat T_id11_cam0 = markers_0[0].getTransformMatrix();
+    cv::Mat T_id17_cam0 = markers_0[1].getTransformMatrix();
+    cv::Mat T_id17_cam1 = markers_1[0].getTransformMatrix();
 
-    ///* This is just an intermediate step */
-    //cv::Mat T = T_cam0_id11.inv() * T_cam0_id17 * T_cam1_id17.inv();
-    //
-    //float dist = sqrt(T.at<float>(0, 3) * T.
-    //    at<float>(0, 3) +
-    //    T.at<float>(1, 3) * T.at<float>(1, 3) +
-    //    T.at<float>(2, 3) * T.at<float>(2, 3));
-    //
-    //float edist = std::abs(dist - 1.2637);
 
     /* g states ground truth */
     //camera on car location ground truth [m]
@@ -192,7 +183,7 @@ int main(int argc, char** argv)
     cv::Mat Tcam1 = rotationMatrixToEulerAngles(gx_cam1, gy_cam1, gz_cam1,
         g_roll_cam1, g_pitch_cam1, g_yaw_cam1);
 
-    /* Id11 - the goal and GT*/
+    /* Id17 - the goal and GT*/
     float gx_id17 = -0.22672f;
     float gy_id17 = -1.1264f;
     float gz_id17 = -0.15329f;
@@ -202,7 +193,7 @@ int main(int argc, char** argv)
     cv::Mat Tid17 = rotationMatrixToEulerAngles(gx_id17, gy_id17, gz_id17,
         g_roll_id17, g_pitch_id17, g_yaw_id17);
 
-    /* Id17 */
+    /* Id11 */
     float gx_id11 = 0;
     float gy_id11 = 0;
     float gz_id11 = 0;
@@ -222,14 +213,17 @@ int main(int argc, char** argv)
 
     /* This is the concept */
     cv::Mat TmarkerOnTheCar = Tid11;
-    cv::Mat Tcam12vcs = TmarkerOnTheCar * T_cam0_id11.inv() * T_cam0_id17 * T_cam1_id17.inv(); //the goal
-    cv::Mat Tcam02vcs = TmarkerOnTheCar * T_cam0_id11;
+    cv::Mat Tcam12vcs = TmarkerOnTheCar * T_id11_cam0.inv() * T_id17_cam0 * T_id17_cam1.inv(); //the goal
+    cv::Mat Tcam02vcs = TmarkerOnTheCar * T_id11_cam0.inv();
+    cv::Mat Tid172vcs = TmarkerOnTheCar * T_id11_cam0.inv() * T_id17_cam0;
 
     float e_cam1 = e_dist(Tcam12vcs, gx_cam1, gy_cam1, gz_cam1);
     float e_cam0 = e_dist(Tcam02vcs, gx_cam0, gy_cam0, gz_cam0);
-    float e_0 = e_dist_T(T_cam0_id17, gt_T_cam0_to_id17);
-    float e_1 = e_dist_T(T_cam0_id11, gt_T_cam0_to_id11);
-    float e_2 = e_dist_T(T_cam1_id17, gt_T_cam1_to_id17);
+    float e_id17 = e_dist(Tid172vcs, gx_id17, gy_id17, gz_id17);
+
+    float e_0 = e_dist_T(T_id17_cam0, gt_T_cam0_to_id17);
+    float e_1 = e_dist_T(T_id11_cam0, gt_T_cam0_to_id11);
+    float e_2 = e_dist_T(T_id17_cam1, gt_T_cam1_to_id17);
 
 
     //float ex = std::abs(Tcamera2vcs.at<float>(0, 3) - gx_cam1);
@@ -290,7 +284,7 @@ cv::Mat rotationMatrixToEulerAngles(float x, float y, float z, float rx, float r
     T4x4.at<float>(1, 3) = y;
     T4x4.at<float>(2, 3) = z;
     R3x3_ = setR(rx, ry, rz);
-    cv::Mat R3x3 = R3x3_;
+    cv::Mat R3x3 = R3x3_.t();
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
             T4x4.at<float>(i, j) = R3x3.at<float>(i, j);
