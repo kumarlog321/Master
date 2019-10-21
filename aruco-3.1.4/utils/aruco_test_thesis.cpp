@@ -209,6 +209,10 @@ int main(int argc, char** argv)
     cv::Mat gt_T_id11_to_cam0 = Tid11.inv() * Tcam0;
     cv::Mat gt_T_id17_to_cam1 = Tid17.inv() * Tcam1;
 
+    cv::Mat T_cam0_id17_sensor = T_id17_cam0.inv();
+    cv::Mat T_cam0_id11_sensor = T_id11_cam0.inv();
+    cv::Mat T_cam1_id17_sensor = T_id17_cam1.inv();
+
     cv::Mat gt_T_cam0_to_id17 = Tcam0.inv() * Tid17;
     cv::Mat gt_T_cam0_to_id11 = Tcam0.inv() * Tid11;
     cv::Mat gt_T_cam1_to_id17 = Tcam1.inv() * Tid17;
@@ -305,7 +309,12 @@ cv::Mat T_from_q(float x, float y, float z, float qw, float qx, float qy, float 
     q[3] = qw;
     QuatsToMat(q, M);
     cv::Mat R3x3_ = cv::Mat(3, 3, CV_32FC1, M);
-    cv::Mat R3x3 = R3x3_.t();
+    //cv::Mat R3x3 = R3x3_.t();
+    //cv::Mat R3x3 = R3x3_; // *setR(180, 0, 0);
+    //cv::Mat rrr = setR(180, 0, 0);
+    //cv::Mat R3x3__ = R3x3_ * setR(180, 0, 0).t();
+    cv::Mat R3x3__ = R3x3_.t() * setR(180, 0, 0);
+    cv::Mat R3x3 = R3x3__.t();
 
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
@@ -335,6 +344,7 @@ float e_dist_T(cv::Mat T4x4, cv::Mat gtT4x4)
 
 void QuatsToMat(const float *q, float *m) {
 
+#if 0
     float x2 = q[0] + q[0];
     float y2 = q[1] + q[1];
     float z2 = q[2] + q[2];
@@ -364,4 +374,23 @@ void QuatsToMat(const float *q, float *m) {
         m[0 * 3 + 2] = xz2 - wy2;
         m[2 * 3 + 0] = xz2 + wy2;
     }
+#else
+    //x,y,z w
+    //try out this implementation: https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/index.htm
+    float qx = q[0];
+    float qy = q[1];
+    float qz = q[2];
+    float qw = q[3];
+
+    m[0] = 1 - 2 * qy *qy - 2 * qz * qz;
+    m[1] = 2 * qx*qy - 2 * qz*qw;
+    m[2] = 2 * qx*qz + 2 * qy*qw;
+    m[3] = 2 * qx*qy + 2 * qz*qw;
+    m[4] = 1 - 2 * qx * qx - 2 * qz * qz;
+    m[5] = 2 * qy*qz - 2 * qx*qw;
+    m[6] = 2 * qx*qz - 2 * qy*qw;
+    m[7] = 2 * qy*qz + 2 * qx*qw; 
+    m[8] = 1 - 2 * qx * qx - 2 * qy * qy;
+
+#endif
 }
