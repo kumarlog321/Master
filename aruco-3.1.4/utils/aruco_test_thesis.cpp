@@ -227,12 +227,6 @@ int main(int argc, char** argv)
     float e_1 = e_dist_T(T_id11_cam0, gt_T_cam0_to_id11);
     float e_2 = e_dist_T(T_id17_cam1, gt_T_cam1_to_id17);
 
-
-    //float ex = std::abs(Tcamera2vcs.at<float>(0, 3) - gx_cam1);
-    //float ey = std::abs(Tcamera2vcs.at<float>(1, 3) - gy_cam1);
-    //float ez = std::abs(Tcamera2vcs.at<float>(2, 3) - gz_cam1);
-    //float e = sqrt(ex * ex + ey * ey + ez * ez);
-
     return 0;
 }
 
@@ -255,7 +249,6 @@ cv::Mat convert4x4to3x3(cv::Mat mat4x4)
 
 cv::Vec3f rotationMatrixToEulerAngles(cv::Mat R)
 {
-
     //assert(isRotationMatrix(R));
 
     float sy = sqrt(R.at<float>(0, 0) * R.at<float>(0, 0) + R.at<float>(1, 0) * R.at<float>(1, 0));
@@ -278,6 +271,7 @@ cv::Vec3f rotationMatrixToEulerAngles(cv::Mat R)
     return cv::Vec3f(x, y, z);
 }
 
+/* rename it */
 cv::Mat rotationMatrixToEulerAngles(float x, float y, float z, float rx, float ry, float rz)
 {
     cv::Mat T4x4 = cv::Mat::eye(4, 4, CV_32FC1);
@@ -298,14 +292,11 @@ cv::Mat rotationMatrixToEulerAngles(float x, float y, float z, float rx, float r
 cv::Mat T_from_q(float x, float y, float z, float qw, float qx, float qy, float qz)
 {
     cv::Mat T4x4 = cv::Mat::eye(4, 4, CV_32FC1);
-    //cv::Mat R3x3_ = cv::Mat::eye(3, 3, CV_32FC1);
     T4x4.at<float>(0, 3) = x;
     T4x4.at<float>(1, 3) = y;
     T4x4.at<float>(2, 3) = z;
 
-    //R3x3_ = setR(rx, ry, rz);
-    //cv::Mat R3x3 = R3x3_.t();
-
+    /* clean and optmize */
     float q[4];
     float M[9];
     q[0] = qx;
@@ -344,72 +335,33 @@ float e_dist_T(cv::Mat T4x4, cv::Mat gtT4x4)
 
 void QuatsToMat(const float *q, float *m) {
 
-#if 1
-    //for (int i = 0; i < numJoints; i++) {
-        //m[0 * 4 + 3] = q[4];
-        //m[1 * 4 + 3] = q[5];
-        //m[2 * 4 + 3] = q[6];
-        float x2 = q[0] + q[0];
-        float y2 = q[1] + q[1];
-        float z2 = q[2] + q[2];
-        {
-            float xx2 = q[0] * x2;
-            float yy2 = q[1] * y2;
-            float zz2 = q[2] * z2;
-            m[0 * 3 + 0] = 1.0f - yy2 - zz2;
-            m[1 * 3 + 1] = 1.0f - xx2 - zz2;
-            m[2 * 3 + 2] = 1.0f - xx2 - yy2;
-        }
-        {
-            float yz2 = q[1] * z2;
-            float wx2 = q[3] * x2;
-            m[2 * 3 + 1] = yz2 - wx2;
-            m[1 * 3 + 2] = yz2 + wx2;
-        }
-        {
-            float xy2 = q[0] * y2;
-            float wz2 = q[3] * z2;
-            m[1 * 3 + 0] = xy2 - wz2;
-            m[0 * 3 + 1] = xy2 + wz2;
-        }
-        {
-            float xz2 = q[0] * z2;
-            float wy2 = q[3] * y2;
-            m[0 * 3 + 2] = xz2 - wy2;
-            m[2 * 3 + 0] = xz2 + wy2;
-        }
-    //}
-#else
-
-#endif
+    float x2 = q[0] + q[0];
+    float y2 = q[1] + q[1];
+    float z2 = q[2] + q[2];
+    {
+        float xx2 = q[0] * x2;
+        float yy2 = q[1] * y2;
+        float zz2 = q[2] * z2;
+        m[0 * 3 + 0] = 1.0f - yy2 - zz2;
+        m[1 * 3 + 1] = 1.0f - xx2 - zz2;
+        m[2 * 3 + 2] = 1.0f - xx2 - yy2;
+    }
+    {
+        float yz2 = q[1] * z2;
+        float wx2 = q[3] * x2;
+        m[2 * 3 + 1] = yz2 - wx2;
+        m[1 * 3 + 2] = yz2 + wx2;
+    }
+    {
+        float xy2 = q[0] * y2;
+        float wz2 = q[3] * z2;
+        m[1 * 3 + 0] = xy2 - wz2;
+        m[0 * 3 + 1] = xy2 + wz2;
+    }
+    {
+        float xz2 = q[0] * z2;
+        float wy2 = q[3] * y2;
+        m[0 * 3 + 2] = xz2 - wy2;
+        m[2 * 3 + 0] = xz2 + wy2;
+    }
 }
-
-/*
-//External camera
-T_from_q(float x, float y, float z, 0.713375f, 0.000012f, 0.0, 0.700783f);
-w = 0.713375
-x = 0.000012
-y = -0.0
-z = 0.700783
-
-//Camera on car
-T_from_q(float x, float y, float z, 0.461698f, -0.535092f, 0.473444f, 0.525702f);
-w = 0.461698
-x = -0.535092
-y = 0.473444
-z = 0.525702
-
-//marker id11 on car
-T_from_q(float x, float y, float z, 1.0f, 0.0f, 0.0f, 0.0f);
-w = 1.0
-x = 0.0
-y = 0.0
-z = 0.0
-
-marker id17 reference
-w = 0.382683
-x = 0.92388
-y = 0.0
-z = 0.0
-
-*/
