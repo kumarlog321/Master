@@ -75,7 +75,7 @@ struct   TimerAvrg {
 };
 
 /* create 4x4 matrix float */
-cv::Mat rotationMatrixToEulerAngles(float x, float y, float z, float rx, float ry, float rz);
+cv::Mat T_euler(float x, float y, float z, float rx, float ry, float rz);
 float e_dist(cv::Mat T4x4, float gx, float gy, float gz);
 float e_dist_T(cv::Mat T4x4, cv::Mat gtT4x4);
 void QuatsToMat(const float *q, float *m);
@@ -161,9 +161,9 @@ int main(int argc, char** argv)
     cv::Mat T_id17_cam0 = markers_0[1].getTransformMatrix();
     cv::Mat T_id17_cam1 = markers_1[0].getTransformMatrix();
 
-
-    /* g states ground truth */
-    //camera on car location ground truth [m]
+    cv::Mat T_cam0_id11 = T_id11_cam0.inv();
+    cv::Mat T_cam0_id17 = T_id17_cam0.inv();
+    cv::Mat T_cam1_id17 = T_id17_cam1.inv();
 
     /* cam0 External */
     float gx_cam0 = -0.081863;
@@ -172,8 +172,8 @@ int main(int argc, char** argv)
     float g_roll_cam0 = 180.0f;
     float g_pitch_cam0 = 180.0f;
     float g_yaw_cam0 = 269.0f;
-    //cv::Mat Tcam0 = rotationMatrixToEulerAngles(gx_cam0, gy_cam0, gz_cam0, g_roll_cam0, g_pitch_cam0, g_yaw_cam0);
-    cv::Mat Tcam0 = T_from_q(gx_cam0, gy_cam0, gz_cam0, 0.713375f, 0.000012f, 0.0, 0.700783f);
+    cv::Mat Tcam0 = T_from_q(gx_cam0, gy_cam0, gz_cam0, 0.713375f, 0.000012f, 0.0f, 0.700783) * T_euler(0, 0, 0, 180, 0, 0);
+    cv::Mat Tcam02 = T_from_q(gx_cam0, gy_cam0, gz_cam0, 0.713375f, 0.000012f, 0.0f, 0.700783);
 
     /* cam1*/
     float gx_cam1 = -0.432727;
@@ -182,8 +182,7 @@ int main(int argc, char** argv)
     float g_roll_cam1 = -9.96f;
     float g_pitch_cam1 = 91.2f;
     float g_yaw_cam1 = 87.2f;
-    //cv::Mat Tcam1 = rotationMatrixToEulerAngles(gx_cam1, gy_cam1, gz_cam1, g_roll_cam1, g_pitch_cam1, g_yaw_cam1);
-    cv::Mat Tcam1 = T_from_q(gx_cam1, gy_cam1, gz_cam1, 0.461698f, -0.535092f, 0.473444f, 0.525702f);
+    cv::Mat Tcam1 = T_from_q(gx_cam1, gy_cam1, gz_cam1, 0.461698f, -0.535092f, 0.473444f, 0.525702f) * T_euler(0, 0, 0, 180, 0, 0);
 
     /* Id17 - the goal and GT*/
     float gx_id17 = -0.22672f;
@@ -192,7 +191,6 @@ int main(int argc, char** argv)
     float g_roll_id17 = 135.0f;
     float g_pitch_id17 = 0.0f;
     float g_yaw_id17 = 0.0f;
-    //cv::Mat Tid17 = rotationMatrixToEulerAngles(gx_id17, gy_id17, gz_id17, g_roll_id17, g_pitch_id17, g_yaw_id17);
     cv::Mat Tid17 = T_from_q(gx_id17, gy_id17, gz_id17, 0.382683f, 0.92388f, 0.0f, 0.0f);
 
     /* Id11 */
@@ -202,20 +200,11 @@ int main(int argc, char** argv)
     float g_roll_id11 = 0.0f;
     float g_pitch_id11 = 0.0f;
     float g_yaw_id11 = 0.0f;
-    //cv::Mat Tid11 = rotationMatrixToEulerAngles(gx_id11, gy_id11, gz_id11, g_roll_id11, g_pitch_id11, g_yaw_id11);
     cv::Mat Tid11 = T_from_q(gx_id11, gy_id11, gz_id11, 1.0f, 0.0f, 0.0f, 0.0f);
 
-    cv::Mat gt_T_id17_to_cam0 = Tid17.inv() * Tcam0;
-    cv::Mat gt_T_id11_to_cam0 = Tid11.inv() * Tcam0;
-    cv::Mat gt_T_id17_to_cam1 = Tid17.inv() * Tcam1;
-
-    cv::Mat T_cam0_id17_sensor = T_id17_cam0.inv();
-    cv::Mat T_cam0_id11_sensor = T_id11_cam0.inv();
-    cv::Mat T_cam1_id17_sensor = T_id17_cam1.inv();
-
-    cv::Mat gt_T_cam0_to_id17 = Tcam0.inv() * Tid17;
-    cv::Mat gt_T_cam0_to_id11 = Tcam0.inv() * Tid11;
-    cv::Mat gt_T_cam1_to_id17 = Tcam1.inv() * Tid17;
+    cv::Mat T_cam0_id17_gt = Tid17.inv() * Tcam0;
+    cv::Mat T_cam0_id11_gt = Tid11.inv() * Tcam0;
+    cv::Mat T_cam1_id17_gt = Tid17.inv() * Tcam1;
 
     /* This is the concept */
     cv::Mat TmarkerOnTheCar = Tid11;
@@ -227,9 +216,9 @@ int main(int argc, char** argv)
     float e_cam0 = e_dist(Tcam02vcs, gx_cam0, gy_cam0, gz_cam0);
     float e_id17 = e_dist(Tid172vcs, gx_id17, gy_id17, gz_id17);
 
-    float e_0 = e_dist_T(T_id17_cam0, gt_T_cam0_to_id17);
-    float e_1 = e_dist_T(T_id11_cam0, gt_T_cam0_to_id11);
-    float e_2 = e_dist_T(T_id17_cam1, gt_T_cam1_to_id17);
+    float e_0 = e_dist_T(T_cam0_id17, T_cam0_id17_gt);
+    float e_1 = e_dist_T(T_cam0_id11, T_cam0_id11_gt);
+    float e_2 = e_dist_T(T_cam1_id17, T_cam1_id17_gt);
 
     return 0;
 }
@@ -275,8 +264,8 @@ cv::Vec3f rotationMatrixToEulerAngles(cv::Mat R)
     return cv::Vec3f(x, y, z);
 }
 
-/* rename it */
-cv::Mat rotationMatrixToEulerAngles(float x, float y, float z, float rx, float ry, float rz)
+
+cv::Mat T_euler(float x, float y, float z, float rx, float ry, float rz)
 {
     cv::Mat T4x4 = cv::Mat::eye(4, 4, CV_32FC1);
     cv::Mat R3x3_ = cv::Mat::eye(3, 3, CV_32FC1);
@@ -284,7 +273,7 @@ cv::Mat rotationMatrixToEulerAngles(float x, float y, float z, float rx, float r
     T4x4.at<float>(1, 3) = y;
     T4x4.at<float>(2, 3) = z;
     R3x3_ = setR(rx, ry, rz);
-    cv::Mat R3x3 = R3x3_.t();
+    cv::Mat R3x3 = R3x3_;
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
             T4x4.at<float>(i, j) = R3x3.at<float>(i, j);
@@ -309,12 +298,7 @@ cv::Mat T_from_q(float x, float y, float z, float qw, float qx, float qy, float 
     q[3] = qw;
     QuatsToMat(q, M);
     cv::Mat R3x3_ = cv::Mat(3, 3, CV_32FC1, M);
-    //cv::Mat R3x3 = R3x3_.t();
-    //cv::Mat R3x3 = R3x3_; // *setR(180, 0, 0);
-    //cv::Mat rrr = setR(180, 0, 0);
-    //cv::Mat R3x3__ = R3x3_ * setR(180, 0, 0).t();
-    cv::Mat R3x3__ = R3x3_.t() * setR(180, 0, 0);
-    cv::Mat R3x3 = R3x3__.t();
+    cv::Mat R3x3 = R3x3_;
 
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
@@ -343,38 +327,6 @@ float e_dist_T(cv::Mat T4x4, cv::Mat gtT4x4)
 }
 
 void QuatsToMat(const float *q, float *m) {
-
-#if 0
-    float x2 = q[0] + q[0];
-    float y2 = q[1] + q[1];
-    float z2 = q[2] + q[2];
-    {
-        float xx2 = q[0] * x2;
-        float yy2 = q[1] * y2;
-        float zz2 = q[2] * z2;
-        m[0 * 3 + 0] = 1.0f - yy2 - zz2;
-        m[1 * 3 + 1] = 1.0f - xx2 - zz2;
-        m[2 * 3 + 2] = 1.0f - xx2 - yy2;
-    }
-    {
-        float yz2 = q[1] * z2;
-        float wx2 = q[3] * x2;
-        m[2 * 3 + 1] = yz2 - wx2;
-        m[1 * 3 + 2] = yz2 + wx2;
-    }
-    {
-        float xy2 = q[0] * y2;
-        float wz2 = q[3] * z2;
-        m[1 * 3 + 0] = xy2 - wz2;
-        m[0 * 3 + 1] = xy2 + wz2;
-    }
-    {
-        float xz2 = q[0] * z2;
-        float wy2 = q[3] * y2;
-        m[0 * 3 + 2] = xz2 - wy2;
-        m[2 * 3 + 0] = xz2 + wy2;
-    }
-#else
     //x,y,z w
     //try out this implementation: https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/index.htm
     float qx = q[0];
@@ -389,8 +341,7 @@ void QuatsToMat(const float *q, float *m) {
     m[4] = 1 - 2 * qx * qx - 2 * qz * qz;
     m[5] = 2 * qy*qz - 2 * qx*qw;
     m[6] = 2 * qx*qz - 2 * qy*qw;
-    m[7] = 2 * qy*qz + 2 * qx*qw; 
+    m[7] = 2 * qy*qz + 2 * qx*qw;
     m[8] = 1 - 2 * qx * qx - 2 * qy * qy;
 
-#endif
 }
