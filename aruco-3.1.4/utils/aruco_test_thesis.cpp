@@ -84,6 +84,7 @@ cv::Mat T_from_q(float x, float y, float z, float qw, float qx, float qy, float 
 cv::Mat rot2euler(cv::Mat dest);
 cv::Mat convert4x4to3x3(cv::Mat T);
 cv::Vec3f rotationMatrixToEulerAngles(cv::Mat cam0_id113x3);
+cv::Mat rot_to_euler(cv::Mat R);
 //void rotationMatrixToEulerAngles(cv::Mat dest);
 
 
@@ -217,13 +218,39 @@ int main(int argc, char** argv)
     cv::Mat Tcam02vcs = TmarkerOnTheCar * T_id11_cam0.inv();
     cv::Mat Tid172vcs = TmarkerOnTheCar * T_id11_cam0.inv() * T_id17_cam0;
 
-    //float e_cam1 = e_dist(Tcam12vcs, gx_cam1, gy_cam1, gz_cam1);
-    //float e_cam0 = e_dist(Tcam02vcs, gx_cam0, gy_cam0, gz_cam0);
-    //float e_id17 = e_dist(Tid172vcs, gx_id17, gy_id17, gz_id17);
+    // Error anaylsis
+    cv::Mat T_error_id11_id17 = T_id11_id17_gt.inv() * T_id11_id17_sensor;
+    cv::Mat T_error_id17_cam1 = T_id17_cam1 * T_cam1_id17_gt;
+    cv::Mat T_error_id17_cam0 = T_id17_cam0 * T_cam0_id17_gt;
+    cv::Mat T_error_id11_cam0 = T_id11_cam0 * T_cam0_id11_gt;
 
-    //float e_0 = e_dist_T(T_cam0_id17, T_cam0_id17_gt);
-    //float e_1 = e_dist_T(T_cam0_id11, T_cam0_id11_gt);
-    //float e_2 = e_dist_T(T_cam1_id17, T_cam1_id17_gt);
+    cv::Mat T_error_cam1_vcs = Tcam1.inv() * Tcam12vcs; // Final KPI
+
+    cv::Mat euler_error_id11_id17 = rot_to_euler(T_error_id11_id17);
+    cv::Mat euler_error_id17_cam1 = rot_to_euler(T_error_id17_cam1);
+    cv::Mat euler_error_id17_cam0 = rot_to_euler(T_error_id17_cam0);
+    cv::Mat euler_error_id11_cam0 = rot_to_euler(T_error_id11_cam0);
+
+    cv::Mat euler_error_cam1_vcs = rot_to_euler(T_error_cam1_vcs);
+
+    // Example1: for your report
+    cv::Mat test_gt = cv::Mat::eye(4, 4, CV_32FC1);
+    cv::Mat test_sensor = cv::Mat::eye(4, 4, CV_32FC1);
+    test_sensor.at<float>(0,3) = 0.01;
+    cv::Mat error = test_gt.inv() * test_sensor;
+
+    // Example2: for your ground truth
+    cv::Mat test_gt2 = cv::Mat::eye(4, 4, CV_32FC1);
+    cv::Mat test_sensor2 = cv::Mat::eye(4, 4, CV_32FC1);
+    test_sensor2.at<float>(0, 3) = 0.01;
+    test_sensor2.at<float>(1, 3) = 0.02;
+    test_sensor2 = test_sensor2 * T_euler(0, 0, 0, 2, 1, -1);
+    cv::Mat error2 = test_gt.inv() * test_sensor2;
+    cv::Mat euler_error2 = rot_to_euler(error2);
+
+    // Remarks: there is a precision loss during conversions.
+    // Rendering error: ground truth has some errors: we ignore it
+    // 
 
     return 0;
 }
@@ -247,26 +274,42 @@ cv::Mat convert4x4to3x3(cv::Mat mat4x4)
 
 cv::Vec3f rotationMatrixToEulerAngles(cv::Mat R)
 {
-    //assert(isRotationMatrix(R));
-
     float sy = sqrt(R.at<float>(0, 0) * R.at<float>(0, 0) + R.at<float>(1, 0) * R.at<float>(1, 0));
 
     bool singular = sy < 1e-6; // If
-
     float x, y, z;
-    if (!singular)
-    {
+    if (!singular){
         x = atan2(R.at<float>(2, 1), R.at<float>(2, 2));
         y = atan2(-R.at<float>(2, 0), sy);
         z = atan2(R.at<float>(1, 0), R.at<float>(0, 0));
     }
-    else
-    {
+    else{
         x = atan2(-R.at<float>(1, 2), R.at<float>(1, 1));
         y = atan2(-R.at<float>(2, 0), sy);
         z = 0;
     }
+
     return cv::Vec3f(x, y, z);
+}
+
+cv::Mat rot_to_euler(cv::Mat R)
+{
+    float sy = sqrt(R.at<float>(0, 0) * R.at<float>(0, 0) + R.at<float>(1, 0) * R.at<float>(1, 0));
+
+    bool singular = sy < 1e-6; // If
+    float x, y, z;
+    if (!singular) {
+        x = atan2(R.at<float>(2, 1), R.at<float>(2, 2));
+        y = atan2(-R.at<float>(2, 0), sy);
+        z = atan2(R.at<float>(1, 0), R.at<float>(0, 0));
+    }
+    else {
+        x = atan2(-R.at<float>(1, 2), R.at<float>(1, 1));
+        y = atan2(-R.at<float>(2, 0), sy);
+        z = 0;
+    }
+
+    return cv::Mat(cv::Vec3f(x, y, z) * 180.0f / CV_PI);
 }
 
 
