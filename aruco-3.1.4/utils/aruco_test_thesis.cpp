@@ -105,7 +105,7 @@ int main(int argc, char** argv)
     detector_1.setDictionary(dictionaryStr_1, 0.0f);
     cv::Mat image_0;
     cv::Mat image_1;
-    image_0 = cv::imread("image00_00.png", 1);
+    image_0 = cv::imread("image00_00_1.png", 1);
     image_1 = cv::imread("image11_11.png", 1);
     std::vector<aruco::Marker> markers_0;
     std::vector<aruco::Marker> markers_1;
@@ -173,7 +173,6 @@ int main(int argc, char** argv)
     float g_pitch_cam0 = 180.0f;
     float g_yaw_cam0 = 269.0f;
     cv::Mat Tcam0 = T_from_q(gx_cam0, gy_cam0, gz_cam0, 0.713375f, 0.000012f, 0.0f, 0.700783) * T_euler(0, 0, 0, 180, 0, 0);
-    cv::Mat Tcam02 = T_from_q(gx_cam0, gy_cam0, gz_cam0, 0.713375f, 0.000012f, 0.0f, 0.700783);
 
     /* cam1*/
     float gx_cam1 = -0.432727;
@@ -188,10 +187,11 @@ int main(int argc, char** argv)
     float gx_id17 = -0.22672f;
     float gy_id17 = -1.1264f;
     float gz_id17 = -0.15329f;
-    float g_roll_id17 = 135.0f;
+    float g_roll_id17 = -45;
     float g_pitch_id17 = 0.0f;
     float g_yaw_id17 = 0.0f;
-    cv::Mat Tid17 = T_from_q(gx_id17, gy_id17, gz_id17, 0.382683f, 0.92388f, 0.0f, 0.0f);
+    cv::Mat Tid17 = T_from_q(gx_id17, gy_id17, gz_id17, 0.92388, -0.382683, 0.0f, 0.0f);
+    //cv::Mat Tid17_ = T_euler(gx_id17, gy_id17, gz_id17, g_roll_id17, g_pitch_id17, g_yaw_id17);
 
     /* Id11 */
     float gx_id11 = 0;
@@ -205,6 +205,11 @@ int main(int argc, char** argv)
     cv::Mat T_cam0_id17_gt = Tid17.inv() * Tcam0;
     cv::Mat T_cam0_id11_gt = Tid11.inv() * Tcam0;
     cv::Mat T_cam1_id17_gt = Tid17.inv() * Tcam1;
+    cv::Mat T_id17_id11_gt = Tid11.inv() * Tid17;
+    cv::Mat T_id11_id17_gt = Tid17.inv() * Tid11;
+
+    cv::Mat T_id17_id11_sensor = T_id11_cam0.inv() * T_id17_cam0;
+    cv::Mat T_id11_id17_sensor = T_id17_cam0.inv() * T_id11_cam0;
 
     /* This is the concept */
     cv::Mat TmarkerOnTheCar = Tid11;
@@ -212,13 +217,13 @@ int main(int argc, char** argv)
     cv::Mat Tcam02vcs = TmarkerOnTheCar * T_id11_cam0.inv();
     cv::Mat Tid172vcs = TmarkerOnTheCar * T_id11_cam0.inv() * T_id17_cam0;
 
-    float e_cam1 = e_dist(Tcam12vcs, gx_cam1, gy_cam1, gz_cam1);
-    float e_cam0 = e_dist(Tcam02vcs, gx_cam0, gy_cam0, gz_cam0);
-    float e_id17 = e_dist(Tid172vcs, gx_id17, gy_id17, gz_id17);
+    //float e_cam1 = e_dist(Tcam12vcs, gx_cam1, gy_cam1, gz_cam1);
+    //float e_cam0 = e_dist(Tcam02vcs, gx_cam0, gy_cam0, gz_cam0);
+    //float e_id17 = e_dist(Tid172vcs, gx_id17, gy_id17, gz_id17);
 
-    float e_0 = e_dist_T(T_cam0_id17, T_cam0_id17_gt);
-    float e_1 = e_dist_T(T_cam0_id11, T_cam0_id11_gt);
-    float e_2 = e_dist_T(T_cam1_id17, T_cam1_id17_gt);
+    //float e_0 = e_dist_T(T_cam0_id17, T_cam0_id17_gt);
+    //float e_1 = e_dist_T(T_cam0_id11, T_cam0_id11_gt);
+    //float e_2 = e_dist_T(T_cam1_id17, T_cam1_id17_gt);
 
     return 0;
 }
