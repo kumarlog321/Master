@@ -1,35 +1,39 @@
 package com.codewithkumar;
-import java.util.Scanner;
+import java.util.Stack;
 
 public class Main {
 
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        String ccnum = scanner.next();
-        ccnum = maskCCNumber(ccnum);
+        String[] tokens ={"2", "1", "+", "3", "*"};
+        int a =evalRPN(tokens);
+        System.out.println(a);
     }
 
-    private static String maskCCNumber(String ccnum) {
-        int total = ccnum.length();
-        int startlen=1,endlen = 4;
-        String masked="";
-        char  mask;
-        StringBuffer maskedbuf = new StringBuffer(ccnum.substring(0,startlen));
-        if(ccnum.length()>6 &&
-                ((ccnum.chars().anyMatch(Character::isDigit)))) {
-            int masklen = total-(startlen + endlen) ;
-            for (int i = 1; i <= masklen; i++) {
-                if ((Character.isDigit(ccnum.charAt(i))))
-                    mask = '#';
-                else
-                    mask=ccnum.charAt(i);
-                maskedbuf.append(mask);
+    public static int evalRPN(String[] tokens) {
+               if(tokens==null||tokens.length==0)
+                        return 0;
+                int ans = 0;
+                Stack<Integer> res = new Stack<Integer>();
+                for(int i = 0; i<tokens.length;i++){
+                    ans = 0;
+                        if(tokens[i].equals("/")||tokens[i].equals("*")||tokens[i].equals("+")||tokens[i].equals("-")){
+                                int b = res.pop();
+                                 int a = res.pop();
+                                if(tokens[i].equals("/"))
+                                    ans += a/b;
+                                else if(tokens[i].equals("+"))
+                                         ans += a+b;
+                                else if(tokens[i].equals("-"))
+                                         ans += a-b;
+                                else if(tokens[i].equals("*"))
+                                        ans += a*b;
+                                 res.push(ans);
+                            }else{
+                                res.push(Integer.parseInt(tokens[i]));
+                            }
+                   }
+               return res.pop();
             }
-            maskedbuf.append(ccnum.substring(startlen + masklen, total));
-             masked = maskedbuf.toString();
-            System.out.println( masked );
-            masked= masked;
-        }
-        return masked=ccnum;
-    }
+
+
 }
