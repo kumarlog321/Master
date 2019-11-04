@@ -80,6 +80,8 @@ float e_dist(cv::Mat T4x4, float gx, float gy, float gz);
 float e_dist_T(cv::Mat T4x4, cv::Mat gtT4x4);
 void QuatsToMat(const float *q, float *m);
 cv::Mat T_from_q(float x, float y, float z, float qw, float qx, float qy, float qz);
+float error(cv::Mat );
+float errorPositining(cv::Mat);
 
 cv::Mat rot2euler(cv::Mat dest);
 cv::Mat convert4x4to3x3(cv::Mat T);
@@ -106,8 +108,8 @@ int main(int argc, char** argv)
     detector_1.setDictionary(dictionaryStr_1, 0.0f);
     cv::Mat image_0;
     cv::Mat image_1;
-    image_0 = cv::imread("image00_00_1.png", 1);
-    image_1 = cv::imread("image11_11.png", 1);
+    image_0 = cv::imread("renderimage0_17_18.png", 1);
+    image_1 = cv::imread("renderimage1_17_18.png", 1);
     std::vector<aruco::Marker> markers_0;
     std::vector<aruco::Marker> markers_1;
 
@@ -167,41 +169,41 @@ int main(int argc, char** argv)
     cv::Mat T_cam1_id17 = T_id17_cam1.inv();
 
     /* cam0 External */
-    float gx_cam0 = -0.081863;
-    float gy_cam0 = -0.56468;
-    float gz_cam0 = 3.1863;
-    float g_roll_cam0 = 180.0f;
-    float g_pitch_cam0 = 180.0f;
-    float g_yaw_cam0 = 269.0f;
-    cv::Mat Tcam0 = T_from_q(gx_cam0, gy_cam0, gz_cam0, 0.713375f, 0.000012f, 0.0f, 0.700783) * T_euler(0, 0, 0, 180, 0, 0);
+    float gx_cam0 = 0.233906;
+    float gy_cam0 = 2.44256;
+    float gz_cam0 = -0.152881;
+    //float g_roll_cam0 = -80.7258f;
+    //float g_pitch_cam0 = 179.964f;
+    //float g_yaw_cam0 = 269.0f;
+    cv::Mat Tcam0 = T_from_q(gx_cam0, gy_cam0, gz_cam0, 0.015304f, 0.017521f, 0.761756f, 0.647446f) * T_euler(0, 0, 0, 180, 0, 0);
 
     /* cam1*/
-    float gx_cam1 = -0.432727;
-    float gy_cam1 = 1.09911;
-    float gz_cam1 = -0.449301;
-    float g_roll_cam1 = -9.96f;
-    float g_pitch_cam1 = 91.2f;
-    float g_yaw_cam1 = 87.2f;
-    cv::Mat Tcam1 = T_from_q(gx_cam1, gy_cam1, gz_cam1, 0.461698f, -0.535092f, 0.473444f, 0.525702f) * T_euler(0, 0, 0, 180, 0, 0);
+    float gx_cam1 = -1.58617f;
+    float gy_cam1 = -1.00329f;
+    float gz_cam1 = 0.807367f;
+    //float g_roll_cam1 = -9.96f;
+    //float g_pitch_cam1 = 91.2f;
+    //float g_yaw_cam1 = 87.2f;
+    cv::Mat Tcam1 = T_from_q(gx_cam1, gy_cam1, gz_cam1, -0.564695f, -0.410791f, 0.509194f, 0.503083f) * T_euler(0, 0, 0, 180, 0, 0);
 
     /* Id17 - the goal and GT*/
-    float gx_id17 = -0.22672f;
-    float gy_id17 = -1.1264f;
-    float gz_id17 = -0.15329f;
-    float g_roll_id17 = -45;
-    float g_pitch_id17 = 0.0f;
-    float g_yaw_id17 = 0.0f;
-    cv::Mat Tid17 = T_from_q(gx_id17, gy_id17, gz_id17, 0.92388, -0.382683, 0.0f, 0.0f);
+    float gx_id17 = 0.645195f;
+    float gy_id17 = -0.855396f;
+    float gz_id17 = 0.523349f;
+    //float g_roll_id17 = -45;
+    //float g_pitch_id17 = 0.0f;
+    //float g_yaw_id17 = 0.0f;
+    cv::Mat Tid17 = T_from_q(gx_id17, gy_id17, gz_id17, 0.229767f, -0.659454f, 0.340739f, 0.629464f);
     //cv::Mat Tid17_ = T_euler(gx_id17, gy_id17, gz_id17, g_roll_id17, g_pitch_id17, g_yaw_id17);
 
     /* Id11 */
-    float gx_id11 = 0;
-    float gy_id11 = 0;
-    float gz_id11 = 0;
-    float g_roll_id11 = 0.0f;
-    float g_pitch_id11 = 0.0f;
-    float g_yaw_id11 = 0.0f;
-    cv::Mat Tid11 = T_from_q(gx_id11, gy_id11, gz_id11, 1.0f, 0.0f, 0.0f, 0.0f);
+    float gx_id11 = -0.47856f;
+    float gy_id11 = -0.683885f;
+    float gz_id11 = 0.289345f;
+    //float g_roll_id11 = 0.0f;
+    //float g_pitch_id11 = 0.0f;
+    //float g_yaw_id11 = 0.0f;
+    cv::Mat Tid11 = T_from_q(gx_id11, gy_id11, gz_id11, 0.464639f, -0.521328f, 0.555687f, 0.451154f);
 
     cv::Mat T_cam0_id17_gt = Tid17.inv() * Tcam0;
     cv::Mat T_cam0_id11_gt = Tid11.inv() * Tcam0;
@@ -218,13 +220,38 @@ int main(int argc, char** argv)
     cv::Mat Tcam02vcs = TmarkerOnTheCar * T_id11_cam0.inv();
     cv::Mat Tid172vcs = TmarkerOnTheCar * T_id11_cam0.inv() * T_id17_cam0;
 
+	
     // Error anaylsis
     cv::Mat T_error_id11_id17 = T_id11_id17_gt.inv() * T_id11_id17_sensor;
+	
     cv::Mat T_error_id17_cam1 = T_id17_cam1 * T_cam1_id17_gt;
+	
     cv::Mat T_error_id17_cam0 = T_id17_cam0 * T_cam0_id17_gt;
-    cv::Mat T_error_id11_cam0 = T_id11_cam0 * T_cam0_id11_gt;
 
+    cv::Mat T_error_id11_cam0 = T_id11_cam0 * T_cam0_id11_gt;
+	
+
+
+	float error_id11_id17 = error(T_error_id11_id17);
+	float error_id17_cam1 = error(T_error_id17_cam1);
+	float error_id17_cam0 = error(T_error_id17_cam0);
+	float error_id11_cam0 = error(T_error_id11_cam0);
+
+	float error_euclidean_id11_id17 = errorPositining(T_error_id11_id17);
+	float error_euclidean_id17_cam1 = errorPositining(T_error_id17_cam1);
+	float error_euclidean_id17_cam0 = errorPositining(T_error_id17_cam0);
+	float error_euclidean_id11_cam0 = errorPositining(T_error_id11_cam0);
+
+
+	//float error1 = error(T_error_id11_cam0);
+	
     cv::Mat T_error_cam1_vcs = Tcam1.inv() * Tcam12vcs; // Final KPI
+	float error_R_Cam1_VCS = error(T_error_cam1_vcs);
+	//float error_R_Cam1_VCS = std::abs(T_error_cam1_vcs.at<float>(0, 0) - 1.0f) + std::abs(T_error_cam1_vcs.at<float>(1, 1) - 1.0f) + std::abs(T_error_cam1_vcs.at<float>(2, 2) - 1.0f);
+	//positioning
+	float error_euclidean_cam1_vcs = errorPositining(T_error_cam1_vcs);
+	//float error_euclidean_cam1_vcs = std::sqrt(std::powf(T_error_cam1_vcs.at<float>(0, 3), 2) + std::powf(T_error_cam1_vcs.at<float>(1, 3), 2) + std::powf(T_error_cam1_vcs.at<float>(2, 3), 2));
+
 
     cv::Mat euler_error_id11_id17 = rot_to_euler(T_error_id11_id17);
     cv::Mat euler_error_id17_cam1 = rot_to_euler(T_error_id17_cam1);
@@ -253,6 +280,20 @@ int main(int argc, char** argv)
     // 
 
     return 0;
+}
+
+float error(cv::Mat Er)
+{
+	float error1 = std::abs(Er.at<float>(0, 0) - 1.0f) + std::abs(Er.at<float>(1, 1) - 1.0f) + std::abs(Er.at<float>(2, 2) - 1.0f);
+	return error1;
+
+}
+
+float errorPositining(cv::Mat Er)
+{
+	float error2 = std::sqrt(std::powf(Er.at<float>(0, 3), 2) + std::powf(Er.at<float>(1, 3), 2) + std::powf(Er.at<float>(2, 3), 2));
+	return error2;
+
 }
 
 cv::Mat convert4x4to3x3(cv::Mat mat4x4)
