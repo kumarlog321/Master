@@ -96,7 +96,7 @@ int main(int argc, char** argv)
     TimerAvrg fps_;
     std::string dictionaryStr_0 = "ALL_DICTS";
     std::string dictionaryStr_1 = "ALL_DICTS";
-    float markerSize_0 = 0.2f;
+    float markerSize_0 = 0.27f;
     float markerSize_1 = 0.2f;
     aruco::CameraParameters camparams_0;
     aruco::CameraParameters camparams_1;
@@ -108,8 +108,8 @@ int main(int argc, char** argv)
     detector_1.setDictionary(dictionaryStr_1, 0.0f);
     cv::Mat image_0;
     cv::Mat image_1;
-    image_0 = cv::imread("renderimage0_17_18.png", 1);
-    image_1 = cv::imread("renderimage1_17_18.png", 1);
+    image_0 = cv::imread("renderimage0_11_17(27).png", 1);
+    image_1 = cv::imread("renderimage1_11_17(27).png", 1);
     std::vector<aruco::Marker> markers_0;
     std::vector<aruco::Marker> markers_1;
 
@@ -252,6 +252,20 @@ int main(int argc, char** argv)
 	float error_euclidean_cam1_vcs = errorPositining(T_error_cam1_vcs);
 	//float error_euclidean_cam1_vcs = std::sqrt(std::powf(T_error_cam1_vcs.at<float>(0, 3), 2) + std::powf(T_error_cam1_vcs.at<float>(1, 3), 2) + std::powf(T_error_cam1_vcs.at<float>(2, 3), 2));
 
+	std::ofstream myfile;
+	myfile.open("example.csv");
+	//std::ofstream myfile("example.csv", std::ios_base::app | std::ios_base::out);
+	
+	myfile << " ,Rotation error,Euclidean error\n";
+	myfile << "id11_id17," << error_id11_id17 <<","<< error_euclidean_id11_id17<<"\n";
+	myfile << "id17_cam1," << error_id17_cam1 << "," << error_euclidean_id17_cam1 << "\n";
+	myfile << "id17_cam0," << error_id17_cam0 << "," << error_euclidean_id17_cam0 << "\n";
+	myfile << "id11_cam0," << error_id11_cam0 << "," << error_euclidean_id11_cam0 << "\n";
+	myfile << "Cam1_VCS," << error_R_Cam1_VCS << "," << error_euclidean_cam1_vcs << "\n";
+
+	myfile.close();
+
+
 
     cv::Mat euler_error_id11_id17 = rot_to_euler(T_error_id11_id17);
     cv::Mat euler_error_id17_cam1 = rot_to_euler(T_error_id17_cam1);
@@ -277,6 +291,7 @@ int main(int argc, char** argv)
 
     // Remarks: there is a precision loss during conversions.
     // Rendering error: ground truth has some errors: we ignore it
+
     // 
 
     return 0;
