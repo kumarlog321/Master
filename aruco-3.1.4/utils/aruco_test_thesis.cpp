@@ -93,207 +93,248 @@ cv::Mat rot_to_euler(cv::Mat R);
 
 int main(int argc, char** argv)
 {
-    TimerAvrg fps_;
-    std::string dictionaryStr_0 = "ALL_DICTS";
-    std::string dictionaryStr_1 = "ALL_DICTS";
-    float markerSize_0 = 0.27f;
-    float markerSize_1 = 0.2f;
+	TimerAvrg fps_;
+	std::string dictionaryStr_00 = "ALL_DICTS";
+	std::string dictionaryStr_01 = "ALL_DICTS";
+	std::string dictionaryStr_1 = "ALL_DICTS";
+	float markerSize_00 = 0.20f; // marker on the car
+	float markerSize_01 = 0.20f; // external marker
+    float markerSize_1 = 0.20f;
     aruco::CameraParameters camparams_0;
     aruco::CameraParameters camparams_1;
-    aruco::MarkerDetector detector_0;
+    aruco::MarkerDetector detector_00;
+	aruco::MarkerDetector detector_01;
     aruco::MarkerDetector detector_1;
     camparams_0.readFromXMLFile("cam_0.yml");
+	//camparams_0.CameraMatrix.at<float>(0,2) += 4.0f;
     camparams_1.readFromXMLFile("cam_1.yml");
-    detector_0.setDictionary(dictionaryStr_0, 0.0f);
-    detector_1.setDictionary(dictionaryStr_1, 0.0f);
-    cv::Mat image_0;
-    cv::Mat image_1;
-    image_0 = cv::imread("renderimage0_11_17(27).png", 1);
-    image_1 = cv::imread("renderimage1_11_17(27).png", 1);
-    std::vector<aruco::Marker> markers_0;
-    std::vector<aruco::Marker> markers_1;
-
-    fps_.start();
-    markers_0 = detector_0.detect(image_0, camparams_0, markerSize_0);
-    markers_1 = detector_1.detect(image_1, camparams_1, markerSize_1);
-    fps_.stop();
-
-    /* check the speed by calculating the mean speed of all iterations */
-    std::cout << "\rTime detection=" << fps_.getAvrg() * 1000 << " milliseconds " << std::endl;
-    std::cout << "\r nmarkers = " << markers_0.size() << " images resolution = " << image_0.size() << std::endl;
-    std::cout << "\r nmarkers = " << markers_1.size() << " images resolution = " << image_1.size() << std::endl;
-
-    /* The first camera */
-    auto candidates_0 = detector_0.getCandidates();
-    for (auto cand : candidates_0)
-        aruco::Marker(cand, -1).draw(image_0, cv::Scalar(255, 0, 255));
-
-    for (unsigned int i = 0; i < markers_0.size(); i++) {
-        std::cout << markers_0[i] << std::endl;
-        markers_0[i].draw(image_0, cv::Scalar(0, 0, 255), 2, true);
-    }
-
-    /* draw a 3d cube in each marker if there is 3d info */
-    if (camparams_0.isValid() && markerSize_0 > 0) {
-        for (unsigned int i = 0; i < markers_0.size(); i++) {
-            aruco::CvDrawingUtils::draw3dCube(image_0, markers_0[i], camparams_0);
-            aruco::CvDrawingUtils::draw3dAxis(image_0, markers_0[i], camparams_0);
-        }
-    }
-
-    /* The second camera */
-    auto candidates_1 = detector_1.getCandidates();
-    for (auto cand : candidates_1)
-        aruco::Marker(cand, -1).draw(image_1, cv::Scalar(255, 0, 255));
-
-    for (unsigned int i = 0; i < markers_1.size(); i++) {
-        std::cout << markers_1[i] << std::endl;
-        markers_1[i].draw(image_1, cv::Scalar(0, 0, 255), 2, true);
-    }
-
-    /* draw a 3d cube in each marker if there is 3d info */
-    if (camparams_1.isValid() && markerSize_1 > 0) {
-        for (unsigned int i = 0; i < markers_1.size(); i++) {
-            aruco::CvDrawingUtils::draw3dCube(image_1, markers_1[i], camparams_1);
-            aruco::CvDrawingUtils::draw3dAxis(image_1, markers_1[i], camparams_1);
-        }
-    }
-
-    /* TODO: check if detected */
-    cv::Mat T_id11_cam0 = markers_0[0].getTransformMatrix();
-    cv::Mat T_id17_cam0 = markers_0[1].getTransformMatrix();
-    cv::Mat T_id17_cam1 = markers_1[0].getTransformMatrix();
-
-    cv::Mat T_cam0_id11 = T_id11_cam0.inv();
-    cv::Mat T_cam0_id17 = T_id17_cam0.inv();
-    cv::Mat T_cam1_id17 = T_id17_cam1.inv();
-
-    /* cam0 External */
-    float gx_cam0 = 0.233906;
-    float gy_cam0 = 2.44256;
-    float gz_cam0 = -0.152881;
-    //float g_roll_cam0 = -80.7258f;
-    //float g_pitch_cam0 = 179.964f;
-    //float g_yaw_cam0 = 269.0f;
-    cv::Mat Tcam0 = T_from_q(gx_cam0, gy_cam0, gz_cam0, 0.015304f, 0.017521f, 0.761756f, 0.647446f) * T_euler(0, 0, 0, 180, 0, 0);
-
-    /* cam1*/
-    float gx_cam1 = -1.58617f;
-    float gy_cam1 = -1.00329f;
-    float gz_cam1 = 0.807367f;
-    //float g_roll_cam1 = -9.96f;
-    //float g_pitch_cam1 = 91.2f;
-    //float g_yaw_cam1 = 87.2f;
-    cv::Mat Tcam1 = T_from_q(gx_cam1, gy_cam1, gz_cam1, -0.564695f, -0.410791f, 0.509194f, 0.503083f) * T_euler(0, 0, 0, 180, 0, 0);
-
-    /* Id17 - the goal and GT*/
-    float gx_id17 = 0.645195f;
-    float gy_id17 = -0.855396f;
-    float gz_id17 = 0.523349f;
-    //float g_roll_id17 = -45;
-    //float g_pitch_id17 = 0.0f;
-    //float g_yaw_id17 = 0.0f;
-    cv::Mat Tid17 = T_from_q(gx_id17, gy_id17, gz_id17, 0.229767f, -0.659454f, 0.340739f, 0.629464f);
-    //cv::Mat Tid17_ = T_euler(gx_id17, gy_id17, gz_id17, g_roll_id17, g_pitch_id17, g_yaw_id17);
-
-    /* Id11 */
-    float gx_id11 = -0.47856f;
-    float gy_id11 = -0.683885f;
-    float gz_id11 = 0.289345f;
-    //float g_roll_id11 = 0.0f;
-    //float g_pitch_id11 = 0.0f;
-    //float g_yaw_id11 = 0.0f;
-    cv::Mat Tid11 = T_from_q(gx_id11, gy_id11, gz_id11, 0.464639f, -0.521328f, 0.555687f, 0.451154f);
-
-    cv::Mat T_cam0_id17_gt = Tid17.inv() * Tcam0;
-    cv::Mat T_cam0_id11_gt = Tid11.inv() * Tcam0;
-    cv::Mat T_cam1_id17_gt = Tid17.inv() * Tcam1;
-    cv::Mat T_id17_id11_gt = Tid11.inv() * Tid17;
-    cv::Mat T_id11_id17_gt = Tid17.inv() * Tid11;
-
-    cv::Mat T_id17_id11_sensor = T_id11_cam0.inv() * T_id17_cam0;
-    cv::Mat T_id11_id17_sensor = T_id17_cam0.inv() * T_id11_cam0;
-
-    /* This is the concept */
-    cv::Mat TmarkerOnTheCar = Tid11;
-    cv::Mat Tcam12vcs = TmarkerOnTheCar * T_id11_cam0.inv() * T_id17_cam0 * T_id17_cam1.inv(); //the goal
-    cv::Mat Tcam02vcs = TmarkerOnTheCar * T_id11_cam0.inv();
-    cv::Mat Tid172vcs = TmarkerOnTheCar * T_id11_cam0.inv() * T_id17_cam0;
-
-	
-    // Error anaylsis
-    cv::Mat T_error_id11_id17 = T_id11_id17_gt.inv() * T_id11_id17_sensor;
-	
-    cv::Mat T_error_id17_cam1 = T_id17_cam1 * T_cam1_id17_gt;
-	
-    cv::Mat T_error_id17_cam0 = T_id17_cam0 * T_cam0_id17_gt;
-
-    cv::Mat T_error_id11_cam0 = T_id11_cam0 * T_cam0_id11_gt;
-	
-
-
-	float error_id11_id17 = error(T_error_id11_id17);
-	float error_id17_cam1 = error(T_error_id17_cam1);
-	float error_id17_cam0 = error(T_error_id17_cam0);
-	float error_id11_cam0 = error(T_error_id11_cam0);
-
-	float error_euclidean_id11_id17 = errorPositining(T_error_id11_id17);
-	float error_euclidean_id17_cam1 = errorPositining(T_error_id17_cam1);
-	float error_euclidean_id17_cam0 = errorPositining(T_error_id17_cam0);
-	float error_euclidean_id11_cam0 = errorPositining(T_error_id11_cam0);
-
-
-	//float error1 = error(T_error_id11_cam0);
-	
-    cv::Mat T_error_cam1_vcs = Tcam1.inv() * Tcam12vcs; // Final KPI
-	float error_R_Cam1_VCS = error(T_error_cam1_vcs);
-	//float error_R_Cam1_VCS = std::abs(T_error_cam1_vcs.at<float>(0, 0) - 1.0f) + std::abs(T_error_cam1_vcs.at<float>(1, 1) - 1.0f) + std::abs(T_error_cam1_vcs.at<float>(2, 2) - 1.0f);
-	//positioning
-	float error_euclidean_cam1_vcs = errorPositining(T_error_cam1_vcs);
-	//float error_euclidean_cam1_vcs = std::sqrt(std::powf(T_error_cam1_vcs.at<float>(0, 3), 2) + std::powf(T_error_cam1_vcs.at<float>(1, 3), 2) + std::powf(T_error_cam1_vcs.at<float>(2, 3), 2));
-
 	std::ofstream myfile;
-	myfile.open("example.csv");
-	//std::ofstream myfile("example.csv", std::ios_base::app | std::ios_base::out);
+	myfile.open("example1.csv");
+
+	for (float i = 0; i >= -20; i--) {
+				
+				myfile << "x0=x" << i << "\n";
+		
 	
-	myfile << " ,Rotation error,Euclidean error\n";
-	myfile << "id11_id17," << error_id11_id17 <<","<< error_euclidean_id11_id17<<"\n";
-	myfile << "id17_cam1," << error_id17_cam1 << "," << error_euclidean_id17_cam1 << "\n";
-	myfile << "id17_cam0," << error_id17_cam0 << "," << error_euclidean_id17_cam0 << "\n";
-	myfile << "id11_cam0," << error_id11_cam0 << "," << error_euclidean_id11_cam0 << "\n";
-	myfile << "Cam1_VCS," << error_R_Cam1_VCS << "," << error_euclidean_cam1_vcs << "\n";
 
+		detector_00.setDictionary(dictionaryStr_00, 0.0f);
+		detector_01.setDictionary(dictionaryStr_01, 0.0f);
+		detector_1.setDictionary(dictionaryStr_1, 0.0f);
+		cv::Mat image_0;
+		cv::Mat image_1;
+		image_0 = cv::imread("renderimage0_11_17(20).png", 1);
+		image_1 = cv::imread("renderimage1_11_17(20).png", 1);
+		std::vector<aruco::Marker> markers_00;
+		std::vector<aruco::Marker> markers_01;
+		std::vector<aruco::Marker> markers_1;
+
+		fps_.start();
+		markers_00 = detector_00.detect(image_0, camparams_0, markerSize_00);
+		markers_01 = detector_01.detect(image_0, camparams_0, markerSize_01);
+		markers_1 = detector_1.detect(image_1, camparams_1, markerSize_1);
+		fps_.stop();
+
+		/* check the speed by calculating the mean speed of all iterations */
+		std::cout << "\rTime detection=" << fps_.getAvrg() * 1000 << " milliseconds " << std::endl;
+		std::cout << "\r nmarkers = " << markers_00.size() << " images resolution = " << image_0.size() << std::endl;
+		std::cout << "\r nmarkers = " << markers_01.size() << " images resolution = " << image_0.size() << std::endl;
+		std::cout << "\r nmarkers = " << markers_1.size() << " images resolution = " << image_1.size() << std::endl;
+
+		/* The first camera */
+		auto candidates_0 = detector_00.getCandidates();
+		for (auto cand : candidates_0)
+			aruco::Marker(cand, -1).draw(image_0, cv::Scalar(255, 0, 255));
+
+		for (unsigned int i = 0; i < markers_00.size(); i++) {
+			std::cout << markers_00[i] << std::endl;
+			markers_00[i].draw(image_0, cv::Scalar(0, 0, 255), 2, true);
+		}
+
+		/* draw a 3d cube in each marker if there is 3d info */
+		if (camparams_0.isValid() && markerSize_00 > 0) {
+			for (unsigned int i = 0; i < markers_00.size(); i++) {
+				aruco::CvDrawingUtils::draw3dCube(image_0, markers_00[i], camparams_0);
+				aruco::CvDrawingUtils::draw3dAxis(image_0, markers_00[i], camparams_0);
+			}
+		}
+
+		/* The second camera */
+		auto candidates_1 = detector_1.getCandidates();
+		for (auto cand : candidates_1)
+			aruco::Marker(cand, -1).draw(image_1, cv::Scalar(255, 0, 255));
+
+		for (unsigned int i = 0; i < markers_1.size(); i++) {
+			std::cout << markers_1[i] << std::endl;
+			markers_1[i].draw(image_1, cv::Scalar(0, 0, 255), 2, true);
+		}
+
+		/* draw a 3d cube in each marker if there is 3d info */
+		if (camparams_1.isValid() && markerSize_1 > 0) {
+			for (unsigned int i = 0; i < markers_1.size(); i++) {
+				aruco::CvDrawingUtils::draw3dCube(image_1, markers_1[i], camparams_1);
+				aruco::CvDrawingUtils::draw3dAxis(image_1, markers_1[i], camparams_1);
+			}
+		}
+
+		/* TODO: check if detected */
+		cv::Mat T_id11_cam0; //= markers_00[0].getTransformMatrix();
+		cv::Mat T_id17_cam0; // = markers_00[1].getTransformMatrix();
+
+		if (markers_00[0].id == 11) {
+			T_id11_cam0 = markers_00[0].getTransformMatrix();
+		}
+		else {
+			T_id11_cam0 = markers_00[1].getTransformMatrix();
+		}
+
+		if (markers_01[0].id == 17) {
+			T_id17_cam0 = markers_01[0].getTransformMatrix();
+		}
+		else {
+			T_id17_cam0 = markers_01[1].getTransformMatrix();
+		}
+
+		cv::Mat T_id17_cam1 = markers_1[0].getTransformMatrix();
+
+		cv::Mat T_cam0_id11 = T_id11_cam0.inv();
+		cv::Mat T_cam0_id17 = T_id17_cam0.inv();
+		cv::Mat T_cam1_id17 = T_id17_cam1.inv();
+
+		/* cam0 External */
+		float gx_cam0 = 0.233906;
+		float gy_cam0 = 2.44256;
+		float gz_cam0 = -0.152881;
+		//float g_roll_cam0 = -80.7258f;
+		//float g_pitch_cam0 = 179.964f;
+		//float g_yaw_cam0 = 269.0f;
+		cv::Mat Tcam0 = T_from_q(gx_cam0, gy_cam0, gz_cam0, 0.015304f, 0.017521f, 0.761756f, 0.647446f) * T_euler(0, 0, 0, 180, 0, 0);
+
+		/* cam1*/
+		float gx_cam1 = -1.58617f;
+		float gy_cam1 = -1.00329f;
+		float gz_cam1 = 0.807367f;
+		//float g_roll_cam1 = -9.96f;
+		//float g_pitch_cam1 = 91.2f;
+		//float g_yaw_cam1 = 87.2f;
+		cv::Mat Tcam1 = T_from_q(gx_cam1, gy_cam1, gz_cam1, -0.564695f, -0.410791f, 0.509194f, 0.503083f) * T_euler(0, 0, 0, 180, 0, 0);
+
+		/* Id17 - the goal and GT*/
+		float gx_id17 = 0.645195f;
+		float gy_id17 = -0.855396f;
+		float gz_id17 = 0.523349f;
+		//float g_roll_id17 = -45;
+		//float g_pitch_id17 = 0.0f;
+		//float g_yaw_id17 = 0.0f;
+		cv::Mat Tid17 = T_from_q(gx_id17, gy_id17, gz_id17, 0.229767f, -0.659454f, 0.340739f, 0.629464f);
+		//cv::Mat Tid17_ = T_euler(gx_id17, gy_id17, gz_id17, g_roll_id17, g_pitch_id17, g_yaw_id17);
+
+		/* Id11 */
+		float gx_id11 = -0.47856f;
+		float gy_id11 = -0.683885f;
+		float gz_id11 = 0.289345f;
+		//float g_roll_id11 = 0.0f;
+		//float g_pitch_id11 = 0.0f;
+		//float g_yaw_id11 = 0.0f;
+		cv::Mat Tid11 = T_from_q(gx_id11, gy_id11, gz_id11, 0.464639f, -0.521328f, 0.555687f, 0.451154f);
+
+		cv::Mat T_cam0_id17_gt = Tid17.inv() * Tcam0;
+		cv::Mat T_cam0_id11_gt = Tid11.inv() * Tcam0;
+		cv::Mat T_cam1_id17_gt = Tid17.inv() * Tcam1;
+		cv::Mat T_id17_id11_gt = Tid11.inv() * Tid17;
+		cv::Mat T_id11_id17_gt = Tid17.inv() * Tid11;
+
+		cv::Mat T_id17_id11_sensor = T_id11_cam0.inv() * T_id17_cam0;
+		cv::Mat T_id11_id17_sensor = T_id17_cam0.inv() * T_id11_cam0;
+
+		/* This is the concept */
+		cv::Mat TmarkerOnTheCar = Tid11;
+		cv::Mat Tcam12vcs = TmarkerOnTheCar * T_id11_cam0.inv() * T_id17_cam0 * T_id17_cam1.inv(); //the goal
+		cv::Mat Tcam02vcs = TmarkerOnTheCar * T_id11_cam0.inv();
+		cv::Mat Tid172vcs = TmarkerOnTheCar * T_id11_cam0.inv() * T_id17_cam0;
+
+
+		// Error anaylsis
+		cv::Mat T_error_id11_id17 = T_id11_id17_gt.inv() * T_id11_id17_sensor;
+
+		cv::Mat T_error_id17_cam1 = T_id17_cam1 * T_cam1_id17_gt;
+
+		cv::Mat T_error_id17_cam0 = T_id17_cam0 * T_cam0_id17_gt;
+
+		cv::Mat T_error_id11_cam0 = T_id11_cam0 * T_cam0_id11_gt;
+
+
+
+		float error_id11_id17 = error(T_error_id11_id17);
+		float error_id17_cam1 = error(T_error_id17_cam1);
+		float error_id17_cam0 = error(T_error_id17_cam0);
+		float error_id11_cam0 = error(T_error_id11_cam0);
+
+		float error_euclidean_id11_id17 = errorPositining(T_error_id11_id17);
+		float error_euclidean_id17_cam1 = errorPositining(T_error_id17_cam1);
+		float error_euclidean_id17_cam0 = errorPositining(T_error_id17_cam0);
+		float error_euclidean_id11_cam0 = errorPositining(T_error_id11_cam0);
+
+
+		//float error1 = error(T_error_id11_cam0);
+
+		cv::Mat T_error_cam1_vcs = Tcam1.inv() * Tcam12vcs; // Final KPI
+		float error_R_Cam1_VCS = error(T_error_cam1_vcs);
+		//float error_R_Cam1_VCS = std::abs(T_error_cam1_vcs.at<float>(0, 0) - 1.0f) + std::abs(T_error_cam1_vcs.at<float>(1, 1) - 1.0f) + std::abs(T_error_cam1_vcs.at<float>(2, 2) - 1.0f);
+		//positioning
+		float error_euclidean_cam1_vcs = errorPositining(T_error_cam1_vcs);
+		//float error_euclidean_cam1_vcs = std::sqrt(std::powf(T_error_cam1_vcs.at<float>(0, 3), 2) + std::powf(T_error_cam1_vcs.at<float>(1, 3), 2) + std::powf(T_error_cam1_vcs.at<float>(2, 3), 2));
+
+
+
+
+
+		cv::Mat euler_error_id11_id17 = rot_to_euler(T_error_id11_id17);
+		cv::Mat euler_error_id17_cam1 = rot_to_euler(T_error_id17_cam1);
+		cv::Mat euler_error_id17_cam0 = rot_to_euler(T_error_id17_cam0);
+		cv::Mat euler_error_id11_cam0 = rot_to_euler(T_error_id11_cam0);
+
+		cv::Mat euler_error_cam1_vcs = rot_to_euler(T_error_cam1_vcs);
+
+		//std::ofstream myfile;
+		//myfile.open("example.csv");
+		//std::ofstream myfile("example.csv", std::ios_base::app | std::ios_base::out);
+
+		myfile << camparams_0.CameraMatrix.at<float>(0, 0) << "," << camparams_0.CameraMatrix.at<float>(0, 1) << "," << camparams_0.CameraMatrix.at<float>(0, 2) << "\n";
+		myfile << camparams_0.CameraMatrix.at<float>(1, 0) << "," << camparams_0.CameraMatrix.at<float>(1, 1) << "," << camparams_0.CameraMatrix.at<float>(1, 2) << "\n";
+		myfile << camparams_0.CameraMatrix.at<float>(2, 0) << "," << camparams_0.CameraMatrix.at<float>(2, 1) << "," << camparams_0.CameraMatrix.at<float>(2, 2) << "\n\n";
+
+		myfile << " ,Rotation error,Euclidean error,error in roll,error in pitch, error in yaw, error in x, error in y, error in z\n";
+		myfile << "id11_id17," << error_id11_id17 << "," << error_euclidean_id11_id17 << "," << euler_error_id11_id17.at<float>(0, 0) << "," << euler_error_id11_id17.at<float>(1, 0) << "," << euler_error_id11_id17.at<float>(2, 0) << "," << T_error_id11_id17.at<float>(0, 3) << "," << T_error_id11_id17.at<float>(1, 3) << "," << T_error_id11_id17.at<float>(2, 3) << "\n";
+		myfile << "id17_cam1," << error_id17_cam1 << "," << error_euclidean_id17_cam1 << "," << euler_error_id17_cam1.at<float>(0, 0) << "," << euler_error_id17_cam1.at<float>(1, 0) << "," << euler_error_id17_cam1.at<float>(2, 0) << "," << T_error_id17_cam1.at<float>(0, 3) << "," << T_error_id17_cam1.at<float>(1, 3) << "," << T_error_id17_cam1.at<float>(2, 3) << "\n";
+		myfile << "id17_cam0," << error_id17_cam0 << "," << error_euclidean_id17_cam0 << "," << euler_error_id17_cam0.at<float>(0, 0) << "," << euler_error_id17_cam0.at<float>(1, 0) << "," << euler_error_id17_cam0.at<float>(2, 0) << "," << T_error_id17_cam0.at<float>(0, 3) << "," << T_error_id17_cam0.at<float>(1, 3) << "," << T_error_id17_cam0.at<float>(2, 3) << "\n";
+		myfile << "id11_cam0," << error_id11_cam0 << "," << error_euclidean_id11_cam0 << "," << euler_error_id11_cam0.at<float>(0, 0) << "," << euler_error_id11_cam0.at<float>(1, 0) << "," << euler_error_id11_cam0.at<float>(2, 0) << "," << T_error_id11_cam0.at<float>(0, 3) << "," << T_error_id11_cam0.at<float>(1, 3) << "," << T_error_id11_cam0.at<float>(2, 3) << "\n";
+		myfile << "Cam1_VCS," << error_R_Cam1_VCS << "," << error_euclidean_cam1_vcs << "," << euler_error_cam1_vcs.at<float>(0, 0) << "," << euler_error_cam1_vcs.at<float>(1, 0) << "," << euler_error_cam1_vcs.at<float>(2, 0) << "," << T_error_cam1_vcs.at<float>(0, 3) << "," << T_error_cam1_vcs.at<float>(1, 3) << "," << T_error_cam1_vcs.at<float>(2, 3) << "\n";
+		//myfile.close();
+		
+
+		// Example1: for your report
+		cv::Mat test_gt = cv::Mat::eye(4, 4, CV_32FC1);
+		cv::Mat test_sensor = cv::Mat::eye(4, 4, CV_32FC1);
+		test_sensor.at<float>(0, 3) = 0.01;
+		cv::Mat error = test_gt.inv() * test_sensor;
+
+		// Example2: for your ground truth
+		cv::Mat test_gt2 = cv::Mat::eye(4, 4, CV_32FC1);
+		cv::Mat test_sensor2 = cv::Mat::eye(4, 4, CV_32FC1);
+		test_sensor2.at<float>(0, 3) = 0.01;
+		test_sensor2.at<float>(1, 3) = 0.02;
+		test_sensor2 = test_sensor2 * T_euler(0, 0, 0, 2, 1, -1);
+		cv::Mat error2 = test_gt.inv() * test_sensor2;
+		cv::Mat euler_error2 = rot_to_euler(error2);
+
+		// Remarks: there is a precision loss during conversions.
+		// Rendering error: ground truth has some errors: we ignore it
+
+		// 
+		camparams_0.CameraMatrix.at<float>(0, 2) -=1;
+	}
 	myfile.close();
-
-
-
-    cv::Mat euler_error_id11_id17 = rot_to_euler(T_error_id11_id17);
-    cv::Mat euler_error_id17_cam1 = rot_to_euler(T_error_id17_cam1);
-    cv::Mat euler_error_id17_cam0 = rot_to_euler(T_error_id17_cam0);
-    cv::Mat euler_error_id11_cam0 = rot_to_euler(T_error_id11_cam0);
-
-    cv::Mat euler_error_cam1_vcs = rot_to_euler(T_error_cam1_vcs);
-
-    // Example1: for your report
-    cv::Mat test_gt = cv::Mat::eye(4, 4, CV_32FC1);
-    cv::Mat test_sensor = cv::Mat::eye(4, 4, CV_32FC1);
-    test_sensor.at<float>(0,3) = 0.01;
-    cv::Mat error = test_gt.inv() * test_sensor;
-
-    // Example2: for your ground truth
-    cv::Mat test_gt2 = cv::Mat::eye(4, 4, CV_32FC1);
-    cv::Mat test_sensor2 = cv::Mat::eye(4, 4, CV_32FC1);
-    test_sensor2.at<float>(0, 3) = 0.01;
-    test_sensor2.at<float>(1, 3) = 0.02;
-    test_sensor2 = test_sensor2 * T_euler(0, 0, 0, 2, 1, -1);
-    cv::Mat error2 = test_gt.inv() * test_sensor2;
-    cv::Mat euler_error2 = rot_to_euler(error2);
-
-    // Remarks: there is a precision loss during conversions.
-    // Rendering error: ground truth has some errors: we ignore it
-
-    // 
-
+	
     return 0;
 }
 
