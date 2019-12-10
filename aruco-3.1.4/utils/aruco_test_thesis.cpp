@@ -143,14 +143,18 @@ int main(int argc, char** argv)
 	float cam_fx = camparams_0.CameraMatrix.at<float>(0, 0);
 	float cam_fy = camparams_0.CameraMatrix.at<float>(1, 1);
 
-	
+	cv::Mat image_0org;
+	cv::Mat image_1org;
+	image_0org = cv::imread("renderimage0_11_17(20).png", 1);
+	image_1org = cv::imread("renderimage1_11_17(20).png", 1);
+#define DEBUGVERSION 0
 
-	float maxerror = 10;
+	float maxerror = 5;
 	float niteration = 100;
-	for (float xrand = 0.1; xrand < maxerror; xrand = xrand + 0.1) {
+	for (float xrand = 0.1; xrand < maxerror; xrand = xrand + 0.2) {
 	
-		std::cout << std::endl;
-		std::cout << "xrand: " << xrand << std::endl;
+		//std::cout << std::endl;
+		//std::cout << "xrand: " << xrand << std::endl;
 		float sumerror_px = 0.0f;
 		float sumerror_id11_id17 = 0.0f;
 		float sum_euler_error_id17_cam1_00 = 0.0f;
@@ -215,28 +219,25 @@ int main(int argc, char** argv)
 
 		//int iteration = 1;
 			float randvalue = (static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0f * xrand)))) - xrand;
-			std::cout << "randvalue=" << randvalue << std::endl;
+			//std::cout << "randvalue=" << randvalue << std::endl;
 			//float original_cam_px =camparams_0.CameraMatrix.at<float>(0, 2);
 
-			camparams_0.CameraMatrix.at<float>(0, 2) = cam_px + randvalue;
-			std::cout << "changed value =" << camparams_0.CameraMatrix.at<float>(0, 2) << "\n";
+			//camparams_0.CameraMatrix.at<float>(0, 2) = cam_px + randvalue;
+			//std::cout << "changed value =" << camparams_0.CameraMatrix.at<float>(0, 2) << "\n";
 			//camparams_0.CameraMatrix.at<float>(1, 2) = cam_py + randvalue;
-			//camparams_0.CameraMatrix.at<float>(0, 0) = cam_fx + randvalue;
-			//camparams_0.CameraMatrix.at<float>(1, 1) = cam_fy + randvalue;
-
-
-			//TODO: run your algo
-			float sum = 0;
-
-
+			camparams_0.CameraMatrix.at<float>(0, 0) = cam_fx + randvalue;
+			camparams_0.CameraMatrix.at<float>(1, 1) = cam_fy + randvalue;
 
 			detector_00.setDictionary(dictionaryStr_00, 0.0f);
 			detector_01.setDictionary(dictionaryStr_01, 0.0f);
 			detector_1.setDictionary(dictionaryStr_1, 0.0f);
+			//image0 is read from external camera
 			cv::Mat image_0;
 			cv::Mat image_1;
-			image_0 = cv::imread("renderimage0_11_17(27).png", 1);
-			image_1 = cv::imread("renderimage1_11_17(27).png", 1);
+			//image_0 = cv::imread("renderimage0_11_17(27).png", 1);
+			//image_1 = cv::imread("renderimage1_11_17(27).png", 1);
+			image_0 = image_0org.clone();
+			image_1 = image_1org.clone();
 			std::vector<aruco::Marker> markers_00;
 			std::vector<aruco::Marker> markers_01;
 			std::vector<aruco::Marker> markers_1;
@@ -246,12 +247,13 @@ int main(int argc, char** argv)
 			markers_01 = detector_01.detect(image_0, camparams_0, markerSize_01);
 			markers_1 = detector_1.detect(image_1, camparams_1, markerSize_1);
 			fps_.stop();
-
+#if DEBUGVERSION
 			/* check the speed by calculating the mean speed of all iterations */
 			std::cout << "\rTime detection=" << fps_.getAvrg() * 1000 << " milliseconds " << std::endl;
 			std::cout << "\r nmarkers = " << markers_00.size() << " images resolution = " << image_0.size() << std::endl;
 			std::cout << "\r nmarkers = " << markers_01.size() << " images resolution = " << image_0.size() << std::endl;
 			std::cout << "\r nmarkers = " << markers_1.size() << " images resolution = " << image_1.size() << std::endl;
+
 
 			/* The first camera */
 			auto candidates_0 = detector_00.getCandidates();
@@ -288,7 +290,7 @@ int main(int argc, char** argv)
 					aruco::CvDrawingUtils::draw3dAxis(image_1, markers_1[i], camparams_1);
 				}
 			}
-
+#endif
 			/* TODO: check if detected */
 			cv::Mat T_id11_cam0; //= markers_00[0].getTransformMatrix();
 			cv::Mat T_id17_cam0; // = markers_00[1].getTransformMatrix();
